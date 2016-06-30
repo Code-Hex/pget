@@ -1,9 +1,6 @@
 language: go
 go:
   - tip
-before_install:
-  - go get github.com/axw/gocov/gocov
-  - go get github.com/mattn/goveralls
 script:
   - make lint
   - make test
