@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 func TestErrors(t *testing.T) {
@@ -23,6 +25,17 @@ func TestErrors(t *testing.T) {
 		t.Errorf("could not catch the error")
 	} else {
 		fmt.Printf("Gottca error: %s\n", err)
+	}
+
+	os.RemoveAll("_filename.dat")
+
+	err = errors.New("first")
+	err = errors.Wrap(err, "second")
+	err = errors.Wrap(err, "third")
+
+	err = p.ErrTop(err)
+	if err.Error() != "first" {
+		t.Errorf("could not get top message")
 	}
 
 	fmt.Fprintf(os.Stdout, "Testing errors_test\n\n")

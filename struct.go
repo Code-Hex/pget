@@ -55,6 +55,10 @@ type Utils interface {
 	DirName() string
 }
 
+type ignore struct {
+	err error
+}
+
 type cause interface {
 	Cause() error
 }

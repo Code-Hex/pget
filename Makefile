@@ -1,5 +1,3 @@
-BUILD_OS_TARGETS = "linux darwin freebsd windows"
-
 test: deps
 	go test
 

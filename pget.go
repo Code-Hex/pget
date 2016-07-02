@@ -25,6 +25,8 @@ func New() *Pget {
 func (pget Pget) ErrTop(err error) error {
 	for e := err; e != nil; {
 		switch e.(type) {
+		case ignore:
+			return nil
 		case cause:
 			e = e.(cause).Cause()
 		default:
@@ -38,11 +40,7 @@ func (pget Pget) ErrTop(err error) error {
 // Run execute methods in pget package
 func (pget *Pget) Run() error {
 	if err := pget.ready(); err != nil {
-		e := err.(cause).Cause()
-		if e.Error() == "show" {
-			return nil
-		}
-		return err
+		return pget.ErrTop(err)
 	}
 
 	if err := pget.download(); err != nil {
@@ -56,49 +54,64 @@ func (pget *Pget) Run() error {
 	return nil
 }
 
-func (pget *Pget) ready() error {
+func (p *Pget) ready() error {
 	if p := os.Getenv("GOMAXPROCS"); p == "" {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
 	var opts Options
-	if err := pget.parseOptions(&opts, &pget.args, pget.ARGV); err != nil {
+	if err := p.parseOptions(&opts, &p.args, p.ARGV); err != nil {
 		return errors.Wrap(err, "failed to parse command line args")
 	}
 
 	if opts.Trace {
-		pget.Trace = opts.Trace
+		p.Trace = opts.Trace
 	}
 
 	if opts.Procs <= 0 {
-		pget.procs = 2
+		p.procs = 2
 	} else {
-		pget.procs = opts.Procs
+		p.procs = opts.Procs
 	}
 
-	if err := pget.parseURLs(); err != nil {
+	if err := p.parseURLs(); err != nil {
 		return errors.Wrap(err, "failed to parse of url")
 	}
 
 	if opts.Output != "" {
-		pget.SetFileName(opts.Output)
+		p.SetFileName(opts.Output)
 	} else {
-		pget.URLFileName(pget.url)
+		p.URLFileName(p.url)
 	}
 
-	fmt.Fprintf(os.Stdout, "Checking now %s\n", pget.url)
-	if err := pget.Checking(); err != nil {
+	fmt.Fprintf(os.Stdout, "Checking now %s\n", p.url)
+	if err := p.Checking(); err != nil {
 		return errors.Wrap(err, "faild to check header")
 	}
 
 	return nil
 }
 
-func (pget *Pget) parseOptions(opts *Options, args *[]string, argv []string) error {
+func (p Pget) makeIgnoreErr() ignore {
+	return ignore{
+		err: errors.New("this is ignore message"),
+	}
+}
+
+// Error for version, usage
+func (i ignore) Error() string {
+	return i.err.Error()
+}
+
+func (i ignore) Cause() error {
+	return i.err
+}
+
+func (p *Pget) parseOptions(opts *Options, args *[]string, argv []string) error {
 
 	if len(argv) == 1 {
 		os.Stdout.Write(opts.usage())
-		return errors.New("show")
+		return p.makeIgnoreErr()
 	}
 
 	o, err := opts.parse(argv)
@@ -108,12 +121,12 @@ func (pget *Pget) parseOptions(opts *Options, args *[]string, argv []string) err
 
 	if opts.Help {
 		os.Stdout.Write(opts.usage())
-		return errors.New("show")
+		return p.makeIgnoreErr()
 	}
 
 	if opts.Version {
 		os.Stdout.Write([]byte("Pget " + version + ", a parallel file download client\n"))
-		return errors.New("show")
+		return p.makeIgnoreErr()
 	}
 
 	*args = o
@@ -121,27 +134,27 @@ func (pget *Pget) parseOptions(opts *Options, args *[]string, argv []string) err
 	return nil
 }
 
-func (pget *Pget) parseURLs() error {
+func (p *Pget) parseURLs() error {
 
 	r := regexp.MustCompile(`^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z0-9]{1,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$`)
 
 	// find url in args
-	for _, argv := range pget.args {
+	for _, argv := range p.args {
 		if r.MatchString(argv) {
-			pget.url = argv
+			p.url = argv
 			break
 		}
 	}
 
-	if pget.url == "" {
+	if p.url == "" {
 		return errors.New("url has not been set in argument")
 	}
 
-	u, err := url.Parse(pget.url)
+	u, err := url.Parse(p.url)
 	if err != nil {
 		return errors.Wrap(err, "faild to url parse")
 	}
-	pget.url = u.String()
+	p.url = u.String()
 
 	return nil
 }

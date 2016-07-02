@@ -1,4 +1,4 @@
-Pget - a parallel file download client
+Pget - parallel file download client
 =======
 
 [![Build Status](https://travis-ci.org/Code-Hex/pget.svg?branch=master)](https://travis-ci.org/Code-Hex/pget)
