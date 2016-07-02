@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/ricochet2200/go-disk-usage/du"
+	"golang.org/x/net/context"
 )
 
 // FileName get from Data structs member
@@ -116,8 +117,22 @@ func (d Data) subDirsize(dirname string) (int64, error) {
 	return size, err
 }
 
+func (d *Data) MakeRange(i, split, procs uint64) Range {
+	low := split * i
+	high := low + split - 1
+	if i == procs-1 {
+		high = d.FileSize()
+	}
+
+	return Range{
+		low:    low,
+		high:   high,
+		worker: i,
+	}
+}
+
 // ProgressBar is to show progressbar
-func (d Data) ProgressBar() error {
+func (d Data) ProgressBar(ctx context.Context) error {
 	filesize := int64(d.filesize)
 	dirname := d.dirname
 
@@ -125,21 +140,26 @@ func (d Data) ProgressBar() error {
 	bar.Start()
 
 	for {
-		size, err := d.subDirsize(dirname)
-		if err != nil {
-			return errors.Wrap(err, "failed to get directory size")
-		}
+		select {
+		case <-ctx.Done():
+			return errors.New("progressbar canceled")
+		default:
+			size, err := d.subDirsize(dirname)
+			if err != nil {
+				return errors.Wrap(err, "failed to get directory size")
+			}
 
-		if size < filesize {
-			bar.Set64(size)
-		} else {
-			bar.Set64(filesize)
-			bar.Finish()
-			break
-		}
+			if size < filesize {
+				bar.Set64(size)
+			} else {
+				bar.Set64(filesize)
+				bar.Finish()
+				return nil
+			}
 
-		// To save cpu resource
-		time.Sleep(100 * time.Millisecond)
+			// To save cpu resource
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 
 	return nil

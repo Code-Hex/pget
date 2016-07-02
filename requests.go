@@ -8,6 +8,8 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"golang.org/x/net/context"
+	"golang.org/x/net/context/ctxhttp"
 )
 
 func (p Pget) isNotLastURL(url string) bool {
@@ -66,49 +68,45 @@ func (p *Pget) download() error {
 		return errors.Wrap(err, "faild to mkdir for download location")
 	}
 
-	cerr := make(chan error, procs)
-
 	// calculate split file size
 	split := filesize / procs
 
-	if err := p.IsFree(split); err != nil {
+	if err := p.Utils.IsFree(split); err != nil {
 		return err
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
 
 	var wg sync.WaitGroup
 	wg.Add(int(procs))
 	for i := uint64(0); i < procs; i++ {
 		go func(i uint64) {
 			defer wg.Done()
-			low := split * i
-			high := low + split - 1
-			if i == procs-1 {
-				high = filesize
-			}
-			if err := p.requests(i, low, high, filename); err != nil {
-				cerr <- err
+			r := p.Utils.MakeRange(i, split, procs)
+			if err := p.requests(ctx, r, filename); err != nil {
+				context.Canceled = err
+				cancel()
 			}
 		}(i)
 	}
 
-	// listen to requests error
-	go func() {
-		for err := range cerr {
-			panic(err.Error())
-		}
-	}()
-
-	if err := p.ProgressBar(); err != nil {
+	if err := p.Utils.ProgressBar(ctx); err != nil {
 		return err
 	}
 
 	wg.Wait()
-	close(cerr)
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	return nil
 }
 
-func (p Pget) requests(i, low, high uint64, filename string) error {
+func (p Pget) requests(ctx context.Context, r Range, filename string) error {
+
+	low := r.low
+	high := r.high
+	worker := r.worker
 
 	url := p.url
 	dirname := p.DirName()
@@ -116,20 +114,20 @@ func (p Pget) requests(i, low, high uint64, filename string) error {
 	// create get request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("faild to split NewRequest for get: %d", i))
+		return errors.Wrap(err, fmt.Sprintf("faild to split NewRequest for get: %d", worker))
 	}
 
 	// set download ranges
 	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", low, high))
 	client := new(http.Client)
-	res, err := client.Do(req)
+	res, err := ctxhttp.Do(ctx, client, req) // ctxhttp
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("faild to split get requests: %d", i))
+		return errors.Wrap(err, fmt.Sprintf("faild to split get requests: %d", worker))
 	}
 
 	defer res.Body.Close()
 
-	output, err := os.Create(fmt.Sprintf("%s/%s.%d", dirname, filename, i))
+	output, err := os.Create(fmt.Sprintf("%s/%s.%d", dirname, filename, worker))
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("faild to create %s in %s", filename, dirname))
 	}

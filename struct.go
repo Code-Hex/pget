@@ -1,5 +1,7 @@
 package pget
 
+import "golang.org/x/net/context"
+
 // Pget structs
 type Pget struct {
 	ARGV  []string
@@ -20,6 +22,13 @@ type Options struct {
 	// File    string `long:"file" description:"urls has same hash in a file to download"`
 }
 
+// Range struct for range access
+type Range struct {
+	low    uint64
+	high   uint64
+	worker uint64
+}
+
 // Data struct has file of relational data
 type Data struct {
 	filename string
@@ -29,9 +38,10 @@ type Data struct {
 
 // Utils interface indicate function
 type Utils interface {
-	ProgressBar() error
+	ProgressBar(context.Context) error
 	BindwithFiles(int) error
 	IsFree(uint64) error
+	MakeRange(uint64, uint64, uint64) Range
 
 	// like setter
 	SetFileName(string)

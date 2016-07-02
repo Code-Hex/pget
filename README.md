@@ -7,7 +7,7 @@ Pget - a parallel file download client
 
 ## Description
 
-Download the file from a URL using a parallel request
+Download using a parallel requests
 
 ## Installation
 
