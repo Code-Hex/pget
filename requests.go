@@ -22,7 +22,9 @@ func (p *Pget) Checking() error {
 	url := p.url
 
 	// checking
-	res, err := http.Head(url)
+	res, err := http.Get(url)
+	defer res.Body.Close()
+
 	if err != nil {
 		return errors.Wrap(err, "failed to head request: "+url)
 	}
@@ -91,7 +93,8 @@ func (p *Pget) download() error {
 	}
 
 	if err := p.Utils.ProgressBar(ctx); err != nil {
-		return err
+		context.Canceled = err
+		cancel()
 	}
 
 	wg.Wait()

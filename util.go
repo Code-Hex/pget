@@ -117,6 +117,7 @@ func (d Data) subDirsize(dirname string) (int64, error) {
 	return size, err
 }
 
+// MakeRange will return Range struct to download function
 func (d *Data) MakeRange(i, split, procs uint64) Range {
 	low := split * i
 	high := low + split - 1
@@ -142,7 +143,7 @@ func (d Data) ProgressBar(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.New("progressbar canceled")
+			return nil
 		default:
 			size, err := d.subDirsize(dirname)
 			if err != nil {
@@ -161,8 +162,6 @@ func (d Data) ProgressBar(ctx context.Context) error {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
-
-	return nil
 }
 
 // BindwithFiles function for file binding after split download
