@@ -43,6 +43,9 @@ wget   3.92s user 23.52s system 3% cpu 13:35.24 total
 pget -p 6   10.54s user 34.52s system 25% cpu 2:56.93 total
 ```
 
+## Binary
+You can download from [here](https://github.com/Code-Hex/pget/releases)
+
 ## Author
 
 [codehex](https://twitter.com/CodeHex)
