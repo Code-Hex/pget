@@ -60,7 +60,7 @@ func (p *Pget) download() error {
 	filesize := p.FileSize()
 	filename := p.FileName()
 
-	// make directory for paralell download
+	// make directory for parallel download
 	p.SetDirName(filename)
 
 	dirname := p.DirName()
