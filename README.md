@@ -9,6 +9,8 @@ Pget - parallel file download client
 
 Download using a parallel requests
 
+[![asciicast](https://asciinema.org/a/a505e9fpkdpd7ycefyjs3h5bb.png)](https://asciinema.org/a/a505e9fpkdpd7ycefyjs3h5bb)
+
 ## Installation
 
     $ go get github.com/Code-Hex/pget/cmd/pget
