@@ -47,7 +47,7 @@ func (pget *Pget) Run() error {
 		return err
 	}
 
-	if err := pget.BindwithFiles(pget.procs); err != nil {
+	if err := pget.Utils.BindwithFiles(pget.procs); err != nil {
 		return err
 	}
 
@@ -136,7 +136,7 @@ func (pget *Pget) parseOptions(opts *Options, args *[]string, argv []string) err
 
 func (pget *Pget) parseURLs() error {
 
-	r := regexp.MustCompile(`^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z0-9]{1,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$`)
+	r := regexp.MustCompile(`^https?:\/\/([\w-]+\.)+[:\w-]+(/[\w\s-#,./?%&=]*)?$`)
 
 	// find url in args
 	for _, argv := range pget.args {
