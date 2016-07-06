@@ -35,7 +35,7 @@ func TestPget(t *testing.T) {
 		fp := "_testdata/test.tar.gz"
 		data, err := ioutil.ReadFile(fp)
 		if err != nil {
-			t.Errorf("faild to readfile: %s", err)
+			t.Errorf("failed to readfile: %s", err)
 		}
 		http.ServeContent(w, r, fp, time.Now(), bytes.NewReader(data))
 	})
@@ -57,11 +57,11 @@ func TChecking(t *testing.T, url string) {
 	p.url = url
 
 	if err := p.Checking(); err != nil {
-		t.Errorf("faild to check header: %s", err)
+		t.Errorf("failed to check header: %s", err)
 	}
 
 	// could redirect?
-	assert.NotEqual(t, p.url, url, "faild to get of the last url in the redirect")
+	assert.NotEqual(t, p.url, url, "failed to get of the last url in the redirect")
 	fmt.Fprintf(os.Stdout, "checking_test Done\n\n")
 }
 
@@ -77,7 +77,7 @@ func TDownload(t *testing.T, url string) {
 	}
 
 	if err := p.Checking(); err != nil {
-		t.Errorf("faild to check header: %s", err)
+		t.Errorf("failed to check header: %s", err)
 	}
 
 	assert.Equal(t, p.FileName(), "test.tar.gz", "expected 'test.tar.gz' got %s", p.FileName())
@@ -87,7 +87,7 @@ func TDownload(t *testing.T, url string) {
 	p.procs = 2
 
 	if err := p.download(); err != nil {
-		t.Errorf("faild to download: %s", err)
+		t.Errorf("failed to download: %s", err)
 	}
 
 	// check of the file to exists
@@ -115,22 +115,22 @@ func TBindwithFiles(t *testing.T) {
 	original, err := get2md5(fp)
 
 	if err != nil {
-		t.Errorf("faild to md5sum of original file: %s", err)
+		t.Errorf("failed to md5sum of original file: %s", err)
 	}
 
 	if err := p.BindwithFiles(p.procs); err != nil {
-		t.Errorf("faild to BindwithFiles: %s", err)
+		t.Errorf("failed to BindwithFiles: %s", err)
 	}
 
 	resultfp, err := get2md5(p.FileName())
 	if err != nil {
-		t.Errorf("faild to md5sum of result file: %s", err)
+		t.Errorf("failed to md5sum of result file: %s", err)
 	}
 
 	assert.Equal(t, original, resultfp, "expected %s got %s", original, resultfp)
 
 	if err := os.Remove(p.FileName()); err != nil {
-		t.Errorf("faild to remove of result file: %s", err)
+		t.Errorf("failed to remove of result file: %s", err)
 	}
 
 	fmt.Fprintf(os.Stdout, "bind_test Done\n\n")

@@ -16,6 +16,32 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Data struct has file of relational data
+type Data struct {
+	filename string
+	filesize uint64
+	dirname  string
+}
+
+// Utils interface indicate function
+type Utils interface {
+	ProgressBar(context.Context, chan error, chan bool)
+	BindwithFiles(int) error
+	IsFree(uint64) error
+	MakeRange(uint64, uint64, uint64) Range
+
+	// like setter
+	SetFileName(string)
+	URLFileName(string)
+	SetDirName(string)
+	SetFileSize(uint64)
+
+	// like getter
+	FileName() string
+	FileSize() uint64
+	DirName() string
+}
+
 // FileName get from Data structs member
 func (d Data) FileName() string {
 	return d.filename
@@ -133,7 +159,7 @@ func (d *Data) MakeRange(i, split, procs uint64) Range {
 }
 
 // ProgressBar is to show progressbar
-func (d Data) ProgressBar(ctx context.Context) error {
+func (d Data) ProgressBar(ctx context.Context, chErr chan error, chDone chan bool) {
 	filesize := int64(d.filesize)
 	dirname := d.dirname
 
@@ -143,11 +169,12 @@ func (d Data) ProgressBar(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return
 		default:
 			size, err := d.subDirsize(dirname)
 			if err != nil {
-				return errors.Wrap(err, "failed to get directory size")
+				chErr <- errors.Wrap(err, "failed to get directory size")
+				return
 			}
 
 			if size < filesize {
@@ -155,7 +182,8 @@ func (d Data) ProgressBar(ctx context.Context) error {
 			} else {
 				bar.Set64(filesize)
 				bar.Finish()
-				return nil
+				chDone <- true
+				return
 			}
 
 			// To save cpu resource
@@ -175,7 +203,7 @@ func (d *Data) BindwithFiles(procs int) error {
 
 	fh, err := os.Create(filename)
 	if err != nil {
-		return errors.Wrap(err, "faild to create a file in download location")
+		return errors.Wrap(err, "failed to create a file in download location")
 	}
 
 	defer fh.Close()
@@ -187,7 +215,7 @@ func (d *Data) BindwithFiles(procs int) error {
 		f := fmt.Sprintf("%s/%s.%d", dirname, filename, i)
 		subfp, err := os.Open(f)
 		if err != nil {
-			return errors.Wrap(err, "faild to open "+f+" in download location")
+			return errors.Wrap(err, "failed to open "+f+" in download location")
 		}
 
 		proxy := bar.NewProxyReader(subfp)
@@ -197,7 +225,7 @@ func (d *Data) BindwithFiles(procs int) error {
 
 		// remove a file in download location for join
 		if err := os.Remove(f); err != nil {
-			return errors.Wrap(err, "faild to remove a file in download location")
+			return errors.Wrap(err, "failed to remove a file in download location")
 		}
 	}
 
@@ -205,7 +233,7 @@ func (d *Data) BindwithFiles(procs int) error {
 
 	// remove download location
 	if err := os.Remove(dirname); err != nil {
-		return errors.Wrap(err, "faild to remove download location")
+		return errors.Wrap(err, "failed to remove download location")
 	}
 
 	fmt.Println("Complete")

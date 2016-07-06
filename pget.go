@@ -12,6 +12,23 @@ import (
 
 const version = "0.0.1"
 
+// Pget structs
+type Pget struct {
+	Trace bool
+	procs int
+	args  []string
+	url   string
+	Utils
+}
+
+type ignore struct {
+	err error
+}
+
+type cause interface {
+	Cause() error
+}
+
 // New for pget package
 func New() *Pget {
 	return &Pget{
@@ -78,14 +95,17 @@ func (pget *Pget) ready() error {
 	}
 
 	if opts.Output != "" {
-		pget.SetFileName(opts.Output)
+		pget.Utils.SetFileName(opts.Output)
 	} else {
-		pget.URLFileName(pget.url)
+		pget.Utils.URLFileName(pget.url)
 	}
+
+	// directory name use to parallel download
+	pget.Utils.SetDirName(pget.Utils.FileName())
 
 	fmt.Fprintf(os.Stdout, "Checking now %s\n", pget.url)
 	if err := pget.Checking(); err != nil {
-		return errors.Wrap(err, "faild to check header")
+		return errors.Wrap(err, "failed to check header")
 	}
 
 	return nil
@@ -151,7 +171,7 @@ func (pget *Pget) parseURLs() error {
 
 	u, err := url.Parse(pget.url)
 	if err != nil {
-		return errors.Wrap(err, "faild to url parse")
+		return errors.Wrap(err, "failed to url parse")
 	}
 	pget.url = u.String()
 

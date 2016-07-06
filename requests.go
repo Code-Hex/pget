@@ -5,12 +5,18 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"sync"
 
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 )
+
+// Range struct for range access
+type Range struct {
+	low    uint64
+	high   uint64
+	worker uint64
+}
 
 func (p Pget) isNotLastURL(url string) bool {
 	return url != p.url && url != ""
@@ -59,15 +65,11 @@ func (p *Pget) download() error {
 
 	filesize := p.FileSize()
 	filename := p.FileName()
-
-	// directory name use to parallel download
-	p.SetDirName(filename)
-
 	dirname := p.DirName()
 
 	// create download location
 	if err := os.Mkdir(dirname, 0755); err != nil {
-		return errors.Wrap(err, "faild to mkdir for download location")
+		return errors.Wrap(err, "failed to mkdir for download location")
 	}
 
 	// calculate split file size
@@ -77,48 +79,50 @@ func (p *Pget) download() error {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancelAll := context.WithCancel(context.Background())
 
-	var wg sync.WaitGroup
-	wg.Add(int(procs))
+	chErr := make(chan error)
+	chDone := make(chan bool)
+
 	for i := uint64(0); i < procs; i++ {
 		go func(i uint64) {
-			defer wg.Done()
 			r := p.Utils.MakeRange(i, split, procs)
-			if err := p.requests(ctx, r, filename); err != nil {
-				context.Canceled = err
-				cancel()
+			if err := p.requests(ctx, r, filename, dirname); err != nil {
+				chErr <- err
 			}
+			chDone <- true
 		}(i)
 	}
 
-	if err := p.Utils.ProgressBar(ctx); err != nil {
-		context.Canceled = err
-		cancel()
-	}
+	go p.Utils.ProgressBar(ctx, chErr, chDone)
 
-	wg.Wait()
-	if ctx.Err() != nil {
-		return ctx.Err()
+	// listen for error or done channel
+	for ch := uint64(0); ch < procs+1; ch++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case err := <-chErr:
+			cancelAll()
+			return err
+		case <-chDone:
+		}
 	}
 
 	return nil
 }
 
-func (p Pget) requests(ctx context.Context, r Range, filename string) error {
-
-	dirname := p.DirName()
+func (p Pget) requests(ctx context.Context, r Range, filename, dirname string) error {
 
 	res, err := p.MakeResponse(ctx, r.low, r.high, r.worker) // ctxhttp
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("faild to split get requests: %d", r.worker))
+		return errors.Wrap(err, fmt.Sprintf("failed to split get requests: %d", r.worker))
 	}
 
 	defer res.Body.Close()
 
 	output, err := os.Create(fmt.Sprintf("%s/%s.%d", dirname, filename, r.worker))
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("faild to create %s in %s", filename, dirname))
+		return errors.Wrap(err, fmt.Sprintf("failed to create %s in %s", filename, dirname))
 	}
 
 	defer output.Close()
@@ -128,11 +132,12 @@ func (p Pget) requests(ctx context.Context, r Range, filename string) error {
 	return nil
 }
 
+// MakeResponse return *http.Response include context and range header
 func (p Pget) MakeResponse(ctx context.Context, low, high, worker uint64) (*http.Response, error) {
 	// create get request
 	req, err := http.NewRequest("GET", p.url, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("faild to split NewRequest for get: %d", worker))
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to split NewRequest for get: %d", worker))
 	}
 
 	// set download ranges

@@ -31,7 +31,7 @@ func TestParts_of_ready(t *testing.T) {
 	}
 
 	assert.Equal(t, true, opts.Trace, "failed to parse arguments of trace")
-	assert.Equal(t, opts.Procs, 2, "faild to parse arguments of procs")
+	assert.Equal(t, opts.Procs, 2, "failed to parse arguments of procs")
 
 	if err := p.parseURLs(); err != nil {
 		t.Errorf("failed to parse of url: %s", err)
