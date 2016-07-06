@@ -15,7 +15,6 @@ const version = "0.0.1"
 // New for pget package
 func New() *Pget {
 	return &Pget{
-		ARGV:  os.Args,
 		Trace: false,
 		Utils: &Data{},
 	}
@@ -60,7 +59,7 @@ func (pget *Pget) ready() error {
 	}
 
 	var opts Options
-	if err := pget.parseOptions(&opts, &pget.args, pget.ARGV); err != nil {
+	if err := pget.parseOptions(&opts, os.Args); err != nil {
 		return errors.Wrap(err, "failed to parse command line args")
 	}
 
@@ -98,7 +97,7 @@ func (pget Pget) makeIgnoreErr() ignore {
 	}
 }
 
-// Error for version, usage
+// Error for options: version, usage
 func (i ignore) Error() string {
 	return i.err.Error()
 }
@@ -107,7 +106,7 @@ func (i ignore) Cause() error {
 	return i.err
 }
 
-func (pget *Pget) parseOptions(opts *Options, args *[]string, argv []string) error {
+func (pget *Pget) parseOptions(opts *Options, argv []string) error {
 
 	if len(argv) == 1 {
 		os.Stdout.Write(opts.usage())
@@ -129,7 +128,7 @@ func (pget *Pget) parseOptions(opts *Options, args *[]string, argv []string) err
 		return pget.makeIgnoreErr()
 	}
 
-	*args = o
+	pget.args = o
 
 	return nil
 }

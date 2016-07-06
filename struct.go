@@ -4,7 +4,6 @@ import "golang.org/x/net/context"
 
 // Pget structs
 type Pget struct {
-	ARGV  []string
 	Trace bool
 	procs int
 	args  []string

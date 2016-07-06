@@ -60,7 +60,7 @@ func (p *Pget) download() error {
 	filesize := p.FileSize()
 	filename := p.FileName()
 
-	// make directory for parallel download
+	// directory name use to parallel download
 	p.SetDirName(filename)
 
 	dirname := p.DirName()
@@ -107,30 +107,16 @@ func (p *Pget) download() error {
 
 func (p Pget) requests(ctx context.Context, r Range, filename string) error {
 
-	low := r.low
-	high := r.high
-	worker := r.worker
-
-	url := p.url
 	dirname := p.DirName()
 
-	// create get request
-	req, err := http.NewRequest("GET", url, nil)
+	res, err := p.MakeResponse(ctx, r.low, r.high, r.worker) // ctxhttp
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("faild to split NewRequest for get: %d", worker))
-	}
-
-	// set download ranges
-	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", low, high))
-	client := new(http.Client)
-	res, err := ctxhttp.Do(ctx, client, req) // ctxhttp
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("faild to split get requests: %d", worker))
+		return errors.Wrap(err, fmt.Sprintf("faild to split get requests: %d", r.worker))
 	}
 
 	defer res.Body.Close()
 
-	output, err := os.Create(fmt.Sprintf("%s/%s.%d", dirname, filename, worker))
+	output, err := os.Create(fmt.Sprintf("%s/%s.%d", dirname, filename, r.worker))
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("faild to create %s in %s", filename, dirname))
 	}
@@ -140,4 +126,18 @@ func (p Pget) requests(ctx context.Context, r Range, filename string) error {
 	io.Copy(output, res.Body)
 
 	return nil
+}
+
+func (p Pget) MakeResponse(ctx context.Context, low, high, worker uint64) (*http.Response, error) {
+	// create get request
+	req, err := http.NewRequest("GET", p.url, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("faild to split NewRequest for get: %d", worker))
+	}
+
+	// set download ranges
+	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", low, high))
+	client := new(http.Client)
+
+	return ctxhttp.Do(ctx, client, req)
 }
