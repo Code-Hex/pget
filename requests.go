@@ -100,7 +100,7 @@ func (p *Pget) download() error {
 			}
 
 			// make low range from this next byte
-			r.low += uint64(info.Size()) + 1
+			r.low += uint64(info.Size())
 		}
 		totalActiveProcs += 1
 		go func(r Range) {
