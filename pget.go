@@ -2,23 +2,26 @@ package pget
 
 import (
 	"fmt"
-	"net/url"
 	"os"
-	"regexp"
 	"runtime"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 )
 
-const version = "0.0.1"
+const (
+	version = "0.0.2"
+	msg     = "Pget v" + version + ", parallel file download client\n"
+)
 
 // Pget structs
 type Pget struct {
 	Trace bool
-	procs int
-	args  []string
-	url   string
 	Utils
+	procs   int
+	args    []string
+	url     string
+	timeout int
 }
 
 type ignore struct {
@@ -32,8 +35,10 @@ type cause interface {
 // New for pget package
 func New() *Pget {
 	return &Pget{
-		Trace: false,
-		Utils: &Data{},
+		Trace:   false,
+		Utils:   &Data{},
+		procs:   2, // default
+		timeout: 10,
 	}
 }
 
@@ -76,7 +81,7 @@ func (pget *Pget) ready() error {
 	}
 
 	var opts Options
-	if err := pget.parseOptions(&opts, os.Args); err != nil {
+	if err := pget.parseOptions(&opts, os.Args[1:]); err != nil {
 		return errors.Wrap(err, "failed to parse command line args")
 	}
 
@@ -84,10 +89,12 @@ func (pget *Pget) ready() error {
 		pget.Trace = opts.Trace
 	}
 
-	if opts.Procs <= 0 {
-		pget.procs = 2
-	} else {
+	if opts.Procs > 2 {
 		pget.procs = opts.Procs
+	}
+
+	if opts.Timeout > 0 {
+		pget.timeout = opts.Timeout
 	}
 
 	if err := pget.parseURLs(); err != nil {
@@ -128,7 +135,7 @@ func (i ignore) Cause() error {
 
 func (pget *Pget) parseOptions(opts *Options, argv []string) error {
 
-	if len(argv) == 1 {
+	if len(argv) == 0 {
 		os.Stdout.Write(opts.usage())
 		return pget.makeIgnoreErr()
 	}
@@ -144,7 +151,7 @@ func (pget *Pget) parseOptions(opts *Options, argv []string) error {
 	}
 
 	if opts.Version {
-		os.Stdout.Write([]byte("Pget " + version + ", a parallel file download client\n"))
+		os.Stdout.Write([]byte(msg))
 		return pget.makeIgnoreErr()
 	}
 
@@ -155,11 +162,9 @@ func (pget *Pget) parseOptions(opts *Options, argv []string) error {
 
 func (pget *Pget) parseURLs() error {
 
-	r := regexp.MustCompile(`^https?:\/\/([\w-]+\.)+[:\w-]+(/[\w\s-#,./?%&=]*)?$`)
-
 	// find url in args
 	for _, argv := range pget.args {
-		if r.MatchString(argv) {
+		if govalidator.IsURL(argv) {
 			pget.url = argv
 			break
 		}
@@ -168,12 +173,6 @@ func (pget *Pget) parseURLs() error {
 	if pget.url == "" {
 		return errors.New("url has not been set in argument")
 	}
-
-	u, err := url.Parse(pget.url)
-	if err != nil {
-		return errors.Wrap(err, "failed to url parse")
-	}
-	pget.url = u.String()
 
 	return nil
 }
