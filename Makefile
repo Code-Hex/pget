@@ -8,6 +8,7 @@ deps:
 	go get github.com/jessevdk/go-flags
 	go get github.com/pkg/errors
 	go get github.com/ricochet2200/go-disk-usage/du
+	go get github.com/asaskevich/govalidator
 	go get gopkg.in/cheggaaa/pb.v1
 	go get github.com/stretchr/testify
 
