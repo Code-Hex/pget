@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
@@ -28,7 +29,10 @@ func (p *Pget) Checking() error {
 	url := p.url
 
 	// checking
-	res, err := http.Get(url)
+	client := http.Client{
+		Timeout: time.Duration(p.timeout) * time.Second,
+	}
+	res, err := client.Get(url)
 	if err != nil {
 		return errors.Wrap(err, "failed to head request: "+url)
 	}
@@ -38,8 +42,8 @@ func (p *Pget) Checking() error {
 		return errors.Errorf("not supported range access: %s", url)
 	}
 
-	// To perform to the correct "range access"
-	// get of the last url in the redirect
+	// To perform with the correct "range access"
+	// get the last url in the redirect
 	_url := res.Request.URL.String()
 	if p.isNotLastURL(_url) {
 		p.url = _url

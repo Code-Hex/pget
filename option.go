@@ -4,7 +4,6 @@ import (
     "bytes"
     "fmt"
     "os"
-    "reflect"
 
     "github.com/jessevdk/go-flags"
     "github.com/pkg/errors"
@@ -16,6 +15,7 @@ type Options struct {
     Version bool   `short:"v" long:"version" description:"display the version of pget and exit"`
     Procs   int    `short:"p" long:"procs" description:"split ratio to download file"`
     Output  string `short:"o" long:"output" description:"output file to FILENAME"`
+    Timeout int    `long:"timeout" description:"timeout of checking request in seconds"`
     Trace   bool   `long:"trace" description:"display detail error messages"`
     // File    string `long:"file" description:"urls has same hash in a file to download"`
 }
@@ -35,26 +35,17 @@ func (opts *Options) parse(argv []string) ([]string, error) {
 func (opts Options) usage() []byte {
     buf := bytes.Buffer{}
 
-    fmt.Fprintf(&buf, "Pget "+version+", a parallel file download client\n"+
+    fmt.Fprintf(&buf, msg+
         `Usage: pget [options] URL
 
 Options:
+  -h,  --help                   print usage and exit
+  -v,  --version                display the version of pget and exit
+  -p,  --procs <num>            split ratio to download file
+  -o,  --output <filename>      output file to FILENAME
+  --timeout <seconds>           timeout of checking request in seconds
+  --trace                       display detail error messages
 `)
-
-    var description string
-    t := reflect.TypeOf(opts)
-
-    for i := 0; i < t.NumField(); i++ {
-        tag := t.Field(i).Tag
-
-        if sh := tag.Get("short"); sh != "" {
-            description = fmt.Sprintf("-%s,  --%s", sh, tag.Get("long"))
-        } else {
-            description = fmt.Sprintf("--%s", tag.Get("long"))
-        }
-
-        fmt.Fprintf(&buf, "  %-20s %s\n", description, tag.Get("description"))
-    }
 
     return buf.Bytes()
 }
