@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"regexp"
 	"runtime"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 )
 
@@ -76,7 +76,7 @@ func (pget *Pget) ready() error {
 	}
 
 	var opts Options
-	if err := pget.parseOptions(&opts, os.Args); err != nil {
+	if err := pget.parseOptions(&opts, os.Args[1:]); err != nil {
 		return errors.Wrap(err, "failed to parse command line args")
 	}
 
@@ -85,7 +85,7 @@ func (pget *Pget) ready() error {
 	}
 
 	if opts.Procs <= 0 {
-		pget.procs = 2
+		pget.procs = 2 // default
 	} else {
 		pget.procs = opts.Procs
 	}
@@ -128,7 +128,7 @@ func (i ignore) Cause() error {
 
 func (pget *Pget) parseOptions(opts *Options, argv []string) error {
 
-	if len(argv) == 1 {
+	if len(argv) == 0 {
 		os.Stdout.Write(opts.usage())
 		return pget.makeIgnoreErr()
 	}
@@ -155,11 +155,9 @@ func (pget *Pget) parseOptions(opts *Options, argv []string) error {
 
 func (pget *Pget) parseURLs() error {
 
-	r := regexp.MustCompile(`^https?:\/\/([\w-]+\.)+[:\w-]+(/[\w\s-#,./?%&=]*)?$`)
-
 	// find url in args
 	for _, argv := range pget.args {
-		if r.MatchString(argv) {
+		if govalidator.IsURL(argv) {
 			pget.url = argv
 			break
 		}

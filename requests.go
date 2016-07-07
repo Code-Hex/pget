@@ -29,11 +29,10 @@ func (p *Pget) Checking() error {
 
 	// checking
 	res, err := http.Get(url)
-	defer res.Body.Close()
-
 	if err != nil {
 		return errors.Wrap(err, "failed to head request: "+url)
 	}
+	defer res.Body.Close()
 
 	if res.Header.Get("Accept-Ranges") != "bytes" {
 		return errors.Errorf("not supported range access: %s", url)
@@ -107,6 +106,9 @@ func (p *Pget) download() error {
 		case <-chDone:
 		}
 	}
+
+	close(chErr)
+	close(chDone)
 
 	return nil
 }
