@@ -9,11 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/cheggaaa/pb.v1"
-
 	"github.com/pkg/errors"
 	"github.com/ricochet2200/go-disk-usage/du"
 	"golang.org/x/net/context"
+	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // Data struct has file of relational data
