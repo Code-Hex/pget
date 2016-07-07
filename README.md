@@ -14,6 +14,10 @@ Download using a parallel requests
 ## Installation
 
     $ go get github.com/Code-Hex/pget/cmd/pget
+    
+## Update
+
+    $ go get -u github.com/Code-Hex/pget/cmd/pget
 
 ## Synopsis
 
