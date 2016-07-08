@@ -32,7 +32,7 @@ func (p *Pget) Checking() error {
 	client := http.Client{
 		Timeout: time.Duration(p.timeout) * time.Second,
 	}
-	res, err := client.Get(url)
+	res, err := client.Head(url)
 	if err != nil {
 		return errors.Wrap(err, "failed to head request: "+url)
 	}
