@@ -23,6 +23,10 @@ func (p Pget) isNotLastURL(url string) bool {
 	return url != p.url && url != ""
 }
 
+func (p Pget) isLastProc(i uint64) bool {
+	return i == p.procs-1
+}
+
 // Checking is check to can request
 func (p *Pget) Checking() error {
 
@@ -90,17 +94,22 @@ func (p *Pget) download() error {
 	totalActiveProcs := 0
 	for i := uint64(0); i < procs; i++ {
 		partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, procs, i)
-		info, err := os.Stat(partName)
 		r := p.Utils.MakeRange(i, split, procs)
-		if err == nil {
+
+		if info, err := os.Stat(partName); err == nil {
+			infosize := uint64(info.Size())
 			//check if the part is fully downloaded
-			if uint64(info.Size()) == split {
+			if p.isLastProc(i) {
+				if infosize == r.high-r.low {
+					continue
+				}
+			} else if infosize == split {
 				// skip as the part is already downloaded
 				continue
 			}
 
 			// make low range from this next byte
-			r.low += uint64(info.Size())
+			r.low += infosize
 		}
 		totalActiveProcs += 1
 		go func(r Range) {
@@ -114,7 +123,7 @@ func (p *Pget) download() error {
 	go p.Utils.ProgressBar(ctx, chErr, chDone)
 
 	// listen for error or done channel
-	for ch := 0; ch < totalActiveProcs; ch++ {
+	for ch := 0; ch <= totalActiveProcs; ch++ {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
