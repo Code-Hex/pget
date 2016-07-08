@@ -23,8 +23,8 @@ func (p Pget) isNotLastURL(url string) bool {
 	return url != p.url && url != ""
 }
 
-func (p Pget) isLastProc(i uint64) bool {
-	return i == p.procs-1
+func (p Pget) isLastProc(i, procs uint64) bool {
+	return i == procs-1
 }
 
 // Checking is check to can request
@@ -99,7 +99,7 @@ func (p *Pget) download() error {
 		if info, err := os.Stat(partName); err == nil {
 			infosize := uint64(info.Size())
 			//check if the part is fully downloaded
-			if p.isLastProc(i) {
+			if p.isLastProc(i, procs) {
 				if infosize == r.high-r.low {
 					continue
 				}
