@@ -71,7 +71,7 @@ func (p *Pget) download() error {
 	dirname := p.DirName()
 
 	// create download location
-	if err := os.Mkdir(dirname, 0755); err != nil {
+	if err := os.MkdirAll(dirname, 0755); err != nil {
 		return errors.Wrap(err, "failed to mkdir for download location")
 	}
 
@@ -87,20 +87,34 @@ func (p *Pget) download() error {
 	chErr := make(chan error)
 	chDone := make(chan bool)
 
+	totalActiveProcs := 0
 	for i := uint64(0); i < procs; i++ {
-		go func(i uint64) {
-			r := p.Utils.MakeRange(i, split, procs)
+		partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, procs, i)
+		info, err := os.Stat(partName)
+		r := p.Utils.MakeRange(i, split, procs)
+		if err == nil {
+			//check if the part is fully downloaded
+			if uint64(info.Size()) == split {
+				// skip as the part is already downloaded
+				continue
+			}
+
+			// make low range from this next byte
+			r.low += uint64(info.Size())
+		}
+		totalActiveProcs += 1
+		go func(r Range) {
 			if err := p.requests(ctx, r, filename, dirname); err != nil {
 				chErr <- err
 			}
 			chDone <- true
-		}(i)
+		}(r)
 	}
 
 	go p.Utils.ProgressBar(ctx, chErr, chDone)
 
 	// listen for error or done channel
-	for ch := uint64(0); ch < procs+1; ch++ {
+	for ch := 0; ch < totalActiveProcs; ch++ {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -126,7 +140,8 @@ func (p Pget) requests(ctx context.Context, r Range, filename, dirname string) e
 
 	defer res.Body.Close()
 
-	output, err := os.Create(fmt.Sprintf("%s/%s.%d", dirname, filename, r.worker))
+	partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, p.procs, r.worker)
+	output, err := os.OpenFile(partName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to create %s in %s", filename, dirname))
 	}

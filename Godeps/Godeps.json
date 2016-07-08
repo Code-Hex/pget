@@ -1,0 +1,55 @@
+{
+	"ImportPath": "github.com/Code-Hex/pget",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/asaskevich/govalidator",
+			"Comment": "v4-6-gdf81827",
+			"Rev": "df81827fdd59d8b4fb93d8910b286ab7a3919520"
+		},
+		{
+			"ImportPath": "github.com/davecgh/go-spew/spew",
+			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+		},
+		{
+			"ImportPath": "github.com/jessevdk/go-flags",
+			"Comment": "v1-347-gf2785f5",
+			"Rev": "f2785f5820ec967043de79c8be97edfc464ca745"
+		},
+		{
+			"ImportPath": "github.com/pkg/errors",
+			"Comment": "v0.7.0-5-ga2d6902",
+			"Rev": "a2d6902c6d2a2f194eb3fb474981ab7867c81505"
+		},
+		{
+			"ImportPath": "github.com/pmezard/go-difflib/difflib",
+			"Rev": "792786c7400a136282c1664665ae0a8db921c6c2"
+		},
+		{
+			"ImportPath": "github.com/ricochet2200/go-disk-usage/du",
+			"Rev": "f0d1b743428fc09792f93233d9412f89f88fa2ab"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.1.3-18-g8d64eb7",
+			"Rev": "8d64eb7173c7753d6419fd4a9caf057398611364"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "126a7a162fb43ccaff94c56bd8c244bc6fc47f00"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context/ctxhttp",
+			"Rev": "126a7a162fb43ccaff94c56bd8c244bc6fc47f00"
+		},
+		{
+			"ImportPath": "gopkg.in/cheggaaa/pb.v1",
+			"Comment": "v1.0.4",
+			"Rev": "04b234c80d661c663dbcebd52fc7218fdacc6d0c"
+		}
+	]
+}

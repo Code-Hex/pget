@@ -9,11 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/cheggaaa/pb.v1"
-
 	"github.com/pkg/errors"
 	"github.com/ricochet2200/go-disk-usage/du"
 	"golang.org/x/net/context"
+	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // Data struct has file of relational data
@@ -33,7 +32,7 @@ type Utils interface {
 	// like setter
 	SetFileName(string)
 	URLFileName(string)
-	SetDirName(string)
+	SetDirName(string, int)
 	SetFileSize(uint64)
 
 	// like getter
@@ -91,19 +90,8 @@ func (d *Data) URLFileName(url string) {
 }
 
 // SetDirName set to Data structs member
-func (d *Data) SetDirName(filename string) {
-	original := "_" + filename
-	dirname := original
-
-	// create uniq directory name
-	for i := 1; true; i++ {
-		if _, err := os.Stat(dirname); err == nil {
-			dirname = fmt.Sprintf("%s-%d", original, i)
-		} else {
-			break
-		}
-	}
-	d.dirname = dirname
+func (d *Data) SetDirName(filename string, procs int) {
+	d.dirname = fmt.Sprintf("_%s.%d", filename, procs)
 }
 
 func (d Data) isDos() bool {
@@ -212,7 +200,7 @@ func (d *Data) BindwithFiles(procs int) error {
 	bar.Start()
 
 	for i := 0; i < procs; i++ {
-		f := fmt.Sprintf("%s/%s.%d", dirname, filename, i)
+		f := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, procs, i)
 		subfp, err := os.Open(f)
 		if err != nil {
 			return errors.Wrap(err, "failed to open "+f+" in download location")

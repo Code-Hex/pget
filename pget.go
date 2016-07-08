@@ -108,7 +108,7 @@ func (pget *Pget) ready() error {
 	}
 
 	// directory name use to parallel download
-	pget.Utils.SetDirName(pget.Utils.FileName())
+	pget.Utils.SetDirName(pget.Utils.FileName(), pget.procs)
 
 	fmt.Fprintf(os.Stdout, "Checking now %s\n", pget.url)
 	if err := pget.Checking(); err != nil {
