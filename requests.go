@@ -85,7 +85,9 @@ func (p *Pget) download() error {
 	ctx, cancelAll := context.WithCancel(context.Background())
 
 	chErr := make(chan error)
+	defer close(chErr)
 	chDone := make(chan bool)
+	defer close(chDone)
 
 	for i := uint64(0); i < procs; i++ {
 		go func(i uint64) {
@@ -110,9 +112,6 @@ func (p *Pget) download() error {
 		case <-chDone:
 		}
 	}
-
-	close(chErr)
-	close(chDone)
 
 	return nil
 }

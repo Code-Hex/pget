@@ -217,11 +217,10 @@ func (d *Data) BindwithFiles(procs int) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to open "+f+" in download location")
 		}
+		defer subfp.Close()
 
 		proxy := bar.NewProxyReader(subfp)
 		io.Copy(fh, proxy)
-
-		subfp.Close()
 
 		// remove a file in download location for join
 		if err := os.Remove(f); err != nil {
