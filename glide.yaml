@@ -1,0 +1,18 @@
+package: .
+import:
+- package: github.com/Code-Hex/pget
+- package: github.com/asaskevich/govalidator
+- package: github.com/jessevdk/go-flags
+- package: github.com/pkg/errors
+- package: github.com/ricochet2200/go-disk-usage
+  subpackages:
+  - du
+- package: golang.org/x/net
+  subpackages:
+  - context
+  - context/ctxhttp
+- package: gopkg.in/cheggaaa/pb.v1
+testImport:
+- package: github.com/stretchr/testify
+  subpackages:
+  - assert

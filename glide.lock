@@ -1,0 +1,35 @@
+hash: 9d91aeab5c8a23a88df0b17f47346250761038f685c08db29e5f59b75a937144
+updated: 2016-07-10T00:29:32.576889185+09:00
+imports:
+- name: github.com/asaskevich/govalidator
+  version: df81827fdd59d8b4fb93d8910b286ab7a3919520
+- name: github.com/Code-Hex/pget
+  version: 042374344a2f15d31231cc21e46b2bc6a22541f1
+- name: github.com/jessevdk/go-flags
+  version: f2785f5820ec967043de79c8be97edfc464ca745
+- name: github.com/pkg/errors
+  version: a2d6902c6d2a2f194eb3fb474981ab7867c81505
+- name: github.com/ricochet2200/go-disk-usage
+  version: f0d1b743428fc09792f93233d9412f89f88fa2ab
+  subpackages:
+  - du
+- name: golang.org/x/net
+  version: f841c39de738b1d0df95b5a7187744f0e03d8112
+  subpackages:
+  - context
+  - context/ctxhttp
+- name: gopkg.in/cheggaaa/pb.v1
+  version: 04b234c80d661c663dbcebd52fc7218fdacc6d0c
+testImports:
+- name: github.com/davecgh/go-spew
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: d77da356e56a7428ad25149ca77381849a6a5232
+  subpackages:
+  - assert
