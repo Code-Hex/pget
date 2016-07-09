@@ -13,9 +13,17 @@ Download using a parallel requests
 
 ## Installation
 
+### Homebrew
+
+	brew tap Code-Hex/pget
+	brew install pget
+
+### go get
+Install
+
     $ go get github.com/Code-Hex/pget/cmd/pget
-    
-## Update
+
+Update
 
     $ go get -u github.com/Code-Hex/pget/cmd/pget
 
