@@ -1,4 +1,4 @@
 .*
 !.gitignore
 !.travis.yml
-vendor/*
+vendor
