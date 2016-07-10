@@ -6,7 +6,7 @@ GO15VENDOREXPERIMENT=1
 HAS_GLIDE:=$(shell which glide)
 
 test: deps
-	go test
+	@PATH=$(INTERNAL_BIN_DIR)/$(GOOS)/$(GOARCH):$(PATH) go test -v $(shell glide nv)
 
 deps: glide
 	@PATH=$(INTERNAL_BIN_DIR)/$(GOOS)/$(GOARCH):$(PATH) glide install
@@ -22,7 +22,6 @@ ifndef HAS_GLIDE
 	@mv ./$(GOOS)-$(GOARCH)/glide $(INTERNAL_BIN_DIR)/$(GOOS)/$(GOARCH)/glide
 	@rm -rf ./$(GOOS)-$(GOARCH)
 	@rm ./glide.zip
-	@rm ./glide
 endif
 
 glide: $(INTERNAL_BIN_DIR)/$(GOOS)/$(GOARCH)/glide
