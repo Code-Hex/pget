@@ -32,13 +32,16 @@ func TestRun(t *testing.T) {
 
 	// begin test
 	fmt.Fprintf(os.Stdout, "Testing pget_test\n")
+	fmt.Fprintf(os.Stdout, "First\n")
 	url := ts.URL
 
 	os.Args = []string{
 		"pget",
 		"-p",
-		"2",
+		"3",
 		url,
+		"--timeout",
+		"5",
 	}
 
 	p := New()
@@ -49,6 +52,28 @@ func TestRun(t *testing.T) {
 	if err := os.Remove(p.FileName()); err != nil {
 		t.Errorf("failed to remove of result file: %s", err)
 	}
+	fmt.Fprintf(os.Stdout, "Done\n")
+	fmt.Fprintf(os.Stdout, "Second\n")
 
+	os.Args = []string{
+		"pget",
+		url,
+		"-o",
+		"file.name",
+		"--trace",
+	}
+
+	if err := p.Run(); err != nil {
+		t.Errorf("failed to Run: %s", err)
+	}
+
+	if _, err := os.Stat("file.name"); os.IsNotExist(err) {
+		t.Errorf("failed to output to destination")
+	}
+
+	if err := os.Remove("file.name"); err != nil {
+		t.Errorf("failed to remove of result file: %s", err)
+	}
+	fmt.Fprintf(os.Stdout, "Done\n")
 	fmt.Fprintf(os.Stdout, "pget_test Done\n\n")
 }

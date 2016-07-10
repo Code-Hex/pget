@@ -1,12 +1,14 @@
 hash: 9d91aeab5c8a23a88df0b17f47346250761038f685c08db29e5f59b75a937144
-updated: 2016-07-10T00:45:34.2916037+09:00
+updated: 2016-07-10T22:12:09.672929738+09:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: df81827fdd59d8b4fb93d8910b286ab7a3919520
 - name: github.com/Code-Hex/pget
-  version: c3ae6cb92e65f6f950d93c1bf7980cf5f77d40bb
+  version: e840874aaca89eb69cc45e90e2f4ba50360741b0
 - name: github.com/jessevdk/go-flags
   version: f2785f5820ec967043de79c8be97edfc464ca745
+- name: github.com/mitchellh/go-homedir
+  version: 756f7b183b7ab78acdbbee5c7f392838ed459dda
 - name: github.com/pkg/errors
   version: a2d6902c6d2a2f194eb3fb474981ab7867c81505
 - name: github.com/ricochet2200/go-disk-usage

@@ -3,6 +3,7 @@ package pget
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"github.com/asaskevich/govalidator"
@@ -102,13 +103,25 @@ func (pget *Pget) ready() error {
 	}
 
 	if opts.Output != "" {
-		pget.Utils.SetFileName(opts.Output)
+		abs, err := filepath.Abs(opts.Output)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse of output")
+		}
+
+		file, path, err := pget.Utils.SplitFilePath(abs)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse of output")
+		}
+		pget.Utils.SetFileName(file)
+
+		// directory name use to parallel download
+		pget.Utils.SetDirName(path, file, pget.procs)
 	} else {
 		pget.Utils.URLFileName(pget.url)
-	}
 
-	// directory name use to parallel download
-	pget.Utils.SetDirName(pget.Utils.FileName(), pget.procs)
+		// directory name use to parallel download
+		pget.Utils.SetDirName("", pget.Utils.FileName(), pget.procs)
+	}
 
 	fmt.Fprintf(os.Stdout, "Checking now %s\n", pget.url)
 	if err := pget.Checking(); err != nil {

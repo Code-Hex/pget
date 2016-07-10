@@ -131,7 +131,7 @@ func (p Pget) assignment(totalActiveProcs *int, ctx context.Context, procs, spli
 			// make low range from this next byte
 			r.low += infosize
 		}
-		*totalActiveProcs += 1
+		*totalActiveProcs++
 		go func(r Range) {
 			if err := p.requests(ctx, r, filename, dirname); err != nil {
 				ch.Err <- err

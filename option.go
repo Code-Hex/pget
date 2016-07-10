@@ -14,10 +14,9 @@ type Options struct {
 	Help    bool   `short:"h" long:"help" description:"print usage and exit"`
 	Version bool   `short:"v" long:"version" description:"display the version of pget and exit"`
 	Procs   int    `short:"p" long:"procs" description:"split ratio to download file"`
-	Output  string `short:"o" long:"output" description:"output file to FILENAME"`
+	Output  string `short:"o" long:"output" description:"output file to PATH or FILENAME"`
 	Timeout int    `long:"timeout" description:"timeout of checking request in seconds"`
 	Trace   bool   `long:"trace" description:"display detail error messages"`
-	// File    string `long:"file" description:"urls has same hash in a file to download"`
 }
 
 func (opts *Options) parse(argv []string) ([]string, error) {
@@ -38,12 +37,12 @@ func (opts Options) usage() []byte {
 	fmt.Fprintf(&buf, msg+
 		`Usage: pget [options] URL
   Options:
-  -h,  --help                   print usage and exit
-  -v,  --version                display the version of pget and exit
-  -p,  --procs <num>            split ratio to download file
-  -o,  --output <filename>      output file to FILENAME
-  --timeout <seconds>           timeout of checking request in seconds
-  --trace                       display detail error messages
+  -h,  --help                      print usage and exit
+  -v,  --version                   display the version of pget and exit
+  -p,  --procs <num>               split ratio to download file
+  -o,  --output <PATH|FILENAME>    output file to PATH or FILENAME
+  --timeout <seconds>              timeout of checking request in seconds
+  --trace                          display detail error messages
 `)
 	return buf.Bytes()
 }
