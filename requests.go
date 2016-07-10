@@ -19,11 +19,11 @@ type Range struct {
 	worker uint64
 }
 
-func (p Pget) isNotLastURL(url string) bool {
-	return url != p.url && url != ""
+func isNotLastURL(url, purl string) bool {
+	return url != purl && url != ""
 }
 
-func (p Pget) isLastProc(i, procs uint64) bool {
+func isLastProc(i, procs uint64) bool {
 	return i == procs-1
 }
 
@@ -49,7 +49,7 @@ func (p *Pget) Checking() error {
 	// To perform with the correct "range access"
 	// get the last url in the redirect
 	_url := res.Request.URL.String()
-	if p.isNotLastURL(_url) {
+	if isNotLastURL(_url, p.url) {
 		p.url = _url
 	}
 
@@ -71,7 +71,6 @@ func (p *Pget) download() error {
 	procs := uint64(p.procs)
 
 	filesize := p.FileSize()
-	filename := p.FileName()
 	dirname := p.DirName()
 
 	// create download location
@@ -88,10 +87,31 @@ func (p *Pget) download() error {
 
 	ctx, cancelAll := context.WithCancel(context.Background())
 
-	chErr := make(chan error)
-	chDone := make(chan bool)
+	ch := &Ch{
+		Err:  make(chan error),
+		Done: make(chan bool),
+	}
+	defer ch.Close()
 
-	totalActiveProcs := 0
+	totalActiveProcs := 1 // 1 is progressbar
+
+	// on an assignment for request
+	p.assignment(&totalActiveProcs, ctx, procs, split, ch)
+
+	go p.Utils.ProgressBar(ctx, ch)
+
+	// listen for error or done channel
+	if err := ch.Listen(ctx, cancelAll, totalActiveProcs); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p Pget) assignment(totalActiveProcs *int, ctx context.Context, procs, split uint64, ch *Ch) {
+	filename := p.FileName()
+	dirname := p.DirName()
+
 	for i := uint64(0); i < procs; i++ {
 		partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, procs, i)
 		r := p.Utils.MakeRange(i, split, procs)
@@ -99,7 +119,7 @@ func (p *Pget) download() error {
 		if info, err := os.Stat(partName); err == nil {
 			infosize := uint64(info.Size())
 			//check if the part is fully downloaded
-			if p.isLastProc(i, procs) {
+			if isLastProc(i, procs) {
 				if infosize == r.high-r.low {
 					continue
 				}
@@ -111,33 +131,15 @@ func (p *Pget) download() error {
 			// make low range from this next byte
 			r.low += infosize
 		}
-		totalActiveProcs += 1
+		*totalActiveProcs += 1
 		go func(r Range) {
 			if err := p.requests(ctx, r, filename, dirname); err != nil {
-				chErr <- err
+				ch.Err <- err
+			} else {
+				ch.Done <- true
 			}
-			chDone <- true
 		}(r)
 	}
-
-	go p.Utils.ProgressBar(ctx, chErr, chDone)
-
-	// listen for error or done channel
-	for ch := 0; ch <= totalActiveProcs; ch++ {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case err := <-chErr:
-			cancelAll()
-			return err
-		case <-chDone:
-		}
-	}
-
-	close(chErr)
-	close(chDone)
-
-	return nil
 }
 
 func (p Pget) requests(ctx context.Context, r Range, filename, dirname string) error {

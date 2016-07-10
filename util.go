@@ -24,7 +24,7 @@ type Data struct {
 
 // Utils interface indicate function
 type Utils interface {
-	ProgressBar(context.Context, chan error, chan bool)
+	ProgressBar(context.Context, *Ch)
 	BindwithFiles(int) error
 	IsFree(uint64) error
 	MakeRange(uint64, uint64, uint64) Range
@@ -147,7 +147,7 @@ func (d *Data) MakeRange(i, split, procs uint64) Range {
 }
 
 // ProgressBar is to show progressbar
-func (d Data) ProgressBar(ctx context.Context, chErr chan error, chDone chan bool) {
+func (d Data) ProgressBar(ctx context.Context, ch *Ch) {
 	filesize := int64(d.filesize)
 	dirname := d.dirname
 
@@ -161,7 +161,7 @@ func (d Data) ProgressBar(ctx context.Context, chErr chan error, chDone chan boo
 		default:
 			size, err := d.subDirsize(dirname)
 			if err != nil {
-				chErr <- errors.Wrap(err, "failed to get directory size")
+				ch.Err <- errors.Wrap(err, "failed to get directory size")
 				return
 			}
 
@@ -170,7 +170,7 @@ func (d Data) ProgressBar(ctx context.Context, chErr chan error, chDone chan boo
 			} else {
 				bar.Set64(filesize)
 				bar.Finish()
-				chDone <- true
+				ch.Done <- true
 				return
 			}
 
@@ -219,7 +219,8 @@ func (d *Data) BindwithFiles(procs int) error {
 	bar.Finish()
 
 	// remove download location
-	if err := os.Remove(dirname); err != nil {
+	// RemoveAll reason: will create .DS_Store in download location if execute on mac
+	if err := os.RemoveAll(dirname); err != nil {
 		return errors.Wrap(err, "failed to remove download location")
 	}
 

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	version = "0.0.2"
+	version = "0.0.3"
 	msg     = "Pget v" + version + ", parallel file download client\n"
 )
 
@@ -37,7 +37,7 @@ func New() *Pget {
 	return &Pget{
 		Trace:   false,
 		Utils:   &Data{},
-		procs:   2, // default
+		procs:   runtime.NumCPU(), // default
 		timeout: 10,
 	}
 }
@@ -77,7 +77,7 @@ func (pget *Pget) Run() error {
 
 func (pget *Pget) ready() error {
 	if procs := os.Getenv("GOMAXPROCS"); procs == "" {
-		runtime.GOMAXPROCS(runtime.NumCPU())
+		runtime.GOMAXPROCS(pget.procs)
 	}
 
 	var opts Options
