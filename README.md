@@ -4,6 +4,7 @@ Pget - parallel file download client
 [![Build Status](https://travis-ci.org/Code-Hex/pget.svg?branch=master)](https://travis-ci.org/Code-Hex/pget)
 [![Coverage Status](https://coveralls.io/repos/github/Code-Hex/pget/badge.svg?branch=master)](https://coveralls.io/github/Code-Hex/pget?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Code-Hex/pget)](https://goreportcard.com/report/github.com/Code-Hex/pget)
+[![GitHub release](https://img.shields.io/github/release/Code-Hex/pget.svg)](https://github.com/Code-Hex/pget)
 [![License (GPL version 3)](https://img.shields.io/badge/license-GNU%20GPL%20version%203-blue.svg?style=flat-square)](http://opensource.org/licenses/GPL-3.0)
 ## Description
 
