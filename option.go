@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Code-Hex/updater"
 	"github.com/jessevdk/go-flags"
 	"github.com/pkg/errors"
 )
@@ -15,7 +16,8 @@ type Options struct {
 	Version bool   `short:"v" long:"version" description:"display the version of pget and exit"`
 	Procs   int    `short:"p" long:"procs" description:"split ratio to download file"`
 	Output  string `short:"o" long:"output" description:"output file to PATH or FILENAME"`
-	Timeout int    `long:"timeout" description:"timeout of checking request in seconds"`
+	Timeout int    `short:"t" long:"timeout" description:"timeout of checking request in seconds"`
+	Update  bool   `long:"check-update" description:"check if there is update available"`
 	Trace   bool   `long:"trace" description:"display detail error messages"`
 }
 
@@ -41,8 +43,20 @@ func (opts Options) usage() []byte {
   -v,  --version                   display the version of pget and exit
   -p,  --procs <num>               split ratio to download file
   -o,  --output <PATH|FILENAME>    output file to PATH or FILENAME
-  --timeout <seconds>              timeout of checking request in seconds
+  -t,  --timeout <seconds>         timeout of checking request in seconds
+  --check-update                   check if there is update available
   --trace                          display detail error messages
 `)
 	return buf.Bytes()
+}
+
+func (opts Options) isupdate() ([]byte, error) {
+	buf := bytes.Buffer{}
+	result, err := updater.CheckWithTag("Code-Hex", "pget", version)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintf(&buf, result+"\n")
+
+	return buf.Bytes(), nil
 }

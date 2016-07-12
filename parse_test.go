@@ -99,3 +99,20 @@ func TestShowversion(t *testing.T) {
 
 	fmt.Fprintf(os.Stdout, "showversion_test Done\n\n")
 }
+
+func TestShowisupdate(t *testing.T) {
+	// begin test
+	fmt.Fprintf(os.Stdout, "Testing showversion_test\n")
+
+	args := []string{
+		"pget",
+		"--check-update",
+	}
+
+	p := New()
+	opts := Options{}
+	err := p.parseOptions(&opts, args)
+	assert.NotNil(t, err)
+
+	fmt.Fprintf(os.Stdout, "showversion_test Done\n\n")
+}

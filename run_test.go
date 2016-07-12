@@ -3,12 +3,15 @@ package pget
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/mholt/archiver"
 )
 
 func TestRun(t *testing.T) {
@@ -44,9 +47,21 @@ func TestRun(t *testing.T) {
 		"5",
 	}
 
+	if err := copy("_testdata/resume.tar.gz", "resume.tar.gz"); err != nil {
+		t.Errorf("failed to copy: %s", err)
+	}
+
+	if err := archiver.UntarGz("resume.tar.gz", "."); err != nil {
+		t.Errorf("failed to untargz: %s", err)
+	}
+
 	p := New()
 	if err := p.Run(); err != nil {
 		t.Errorf("failed to Run: %s", err)
+	}
+
+	if err := os.Remove("resume.tar.gz"); err != nil {
+		t.Errorf("failed to remove of test file: %s", err)
 	}
 
 	if err := os.Remove(p.FileName()); err != nil {
@@ -67,6 +82,7 @@ func TestRun(t *testing.T) {
 		t.Errorf("failed to Run: %s", err)
 	}
 
+	// check exist file
 	if _, err := os.Stat("file.name"); os.IsNotExist(err) {
 		t.Errorf("failed to output to destination")
 	}
@@ -76,4 +92,24 @@ func TestRun(t *testing.T) {
 	}
 	fmt.Fprintf(os.Stdout, "Done\n")
 	fmt.Fprintf(os.Stdout, "pget_test Done\n\n")
+}
+
+func copy(src, dest string) error {
+	srcp, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcp.Close()
+
+	dst, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	if _, err = io.Copy(dst, srcp); err != nil {
+		return err
+	}
+
+	return nil
 }

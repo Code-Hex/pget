@@ -168,6 +168,16 @@ func (pget *Pget) parseOptions(opts *Options, argv []string) error {
 		return pget.makeIgnoreErr()
 	}
 
+	if opts.Update {
+		result, err := opts.isupdate()
+		if err != nil {
+			return errors.Wrap(err, "failed to parse command line options")
+		}
+
+		os.Stdout.Write(result)
+		return pget.makeIgnoreErr()
+	}
+
 	pget.args = o
 
 	return nil

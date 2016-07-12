@@ -1,12 +1,18 @@
-hash: 9d91aeab5c8a23a88df0b17f47346250761038f685c08db29e5f59b75a937144
-updated: 2016-07-10T22:12:09.672929738+09:00
+hash: c0550ab4097b6f78b12920db968a7a6e1aaf8a754e45e90be0ebaf6553c0d3b0
+updated: 2016-07-12T19:26:40.448143727+09:00
 imports:
+- name: github.com/antonholmquist/jason
+  version: 423803175a265e07c3f35cd8faf009eac345efb8
 - name: github.com/asaskevich/govalidator
   version: df81827fdd59d8b4fb93d8910b286ab7a3919520
 - name: github.com/Code-Hex/pget
-  version: e840874aaca89eb69cc45e90e2f4ba50360741b0
+  version: 9e372143b26e70db348f3623068f53496a098ec6
+- name: github.com/Code-Hex/updater
+  version: c3f2786725200723369a8f97b8b24bb19fe3baf4
 - name: github.com/jessevdk/go-flags
   version: f2785f5820ec967043de79c8be97edfc464ca745
+- name: github.com/mcuadros/go-version
+  version: d52711f8d6bea8dc01efafdb68ad95a4e2606630
 - name: github.com/mitchellh/go-homedir
   version: 756f7b183b7ab78acdbbee5c7f392838ed459dda
 - name: github.com/pkg/errors
@@ -27,6 +33,17 @@ testImports:
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
+- name: github.com/dsnet/compress
+  version: b9aab3c6a04eef14c56384b4ad065e7b73438862
+  subpackages:
+  - bzip2
+  - bzip2/internal/sais
+  - internal
+  - internal/prefix
+- name: github.com/mholt/archiver
+  version: a075791974ee7d363104fde72b5e009515cc0def
+- name: github.com/nwaples/rardecode
+  version: a59299d0638a4837ddf623507748be79ab19174a
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:

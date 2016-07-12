@@ -1,8 +1,10 @@
 package: .
 import:
 - package: github.com/Code-Hex/pget
+- package: github.com/Code-Hex/updater
 - package: github.com/asaskevich/govalidator
 - package: github.com/jessevdk/go-flags
+- package: github.com/mitchellh/go-homedir
 - package: github.com/pkg/errors
 - package: github.com/ricochet2200/go-disk-usage
   subpackages:
@@ -13,6 +15,7 @@ import:
   - context/ctxhttp
 - package: gopkg.in/cheggaaa/pb.v1
 testImport:
+- package: github.com/mholt/archiver
 - package: github.com/stretchr/testify
   subpackages:
   - assert
