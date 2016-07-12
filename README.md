@@ -35,13 +35,14 @@ Update
 ## Options
 
 ```
-Options:
-  -h,  --help                   print usage and exit
-  -v,  --version                display the version of pget and exit
-  -p,  --procs <num>            split ratio to download file
-  -o,  --output <filename>      output file to FILENAME
-  --timeout <seconds>           timeout of checking request in seconds
-  --trace                       display detail error messages
+  Options:
+  -h,  --help                      print usage and exit
+  -v,  --version                   display the version of pget and exit
+  -p,  --procs <num>               split ratio to download file
+  -o,  --output <PATH|FILENAME>    output file to PATH or FILENAME
+  -t,  --timeout <seconds>         timeout of checking request in seconds
+  --check-update                   check if there is update available
+  --trace                          display detail error messages
 ```
 
 ## Pget vs Wget
