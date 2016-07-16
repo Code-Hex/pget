@@ -17,11 +17,8 @@ import (
 func TestRun(t *testing.T) {
 	// listening file server
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/file", http.StatusFound)
-	})
 
-	mux.HandleFunc("/file", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/file.name", func(w http.ResponseWriter, r *http.Request) {
 		fp := "_testdata/test.tar.gz"
 		data, err := ioutil.ReadFile(fp)
 		if err != nil {
@@ -42,7 +39,7 @@ func TestRun(t *testing.T) {
 		"pget",
 		"-p",
 		"3",
-		url,
+		fmt.Sprintf("%s/%s", url, "file.name"),
 		"--timeout",
 		"5",
 	}
@@ -72,9 +69,9 @@ func TestRun(t *testing.T) {
 
 	os.Args = []string{
 		"pget",
-		url,
-		"-o",
-		"file.name",
+		fmt.Sprintf("%s/%s", url, "file.name"),
+		"-d",
+		"./target_dir",
 		"--trace",
 	}
 
@@ -83,11 +80,11 @@ func TestRun(t *testing.T) {
 	}
 
 	// check exist file
-	if _, err := os.Stat("file.name"); os.IsNotExist(err) {
+	if _, err := os.Stat("./target_dir"); os.IsNotExist(err) {
 		t.Errorf("failed to output to destination")
 	}
 
-	if err := os.Remove("file.name"); err != nil {
+	if err := os.RemoveAll("./target_dir"); err != nil {
 		t.Errorf("failed to remove of result file: %s", err)
 	}
 	fmt.Fprintf(os.Stdout, "Done\n")

@@ -12,13 +12,13 @@ import (
 
 // Options struct for parse command line arguments
 type Options struct {
-	Help    bool   `short:"h" long:"help" description:"print usage and exit"`
-	Version bool   `short:"v" long:"version" description:"display the version of pget and exit"`
-	Procs   int    `short:"p" long:"procs" description:"split ratio to download file"`
-	Output  string `short:"o" long:"output" description:"output file to PATH or FILENAME"`
-	Timeout int    `short:"t" long:"timeout" description:"timeout of checking request in seconds"`
-	Update  bool   `long:"check-update" description:"check if there is update available"`
-	Trace   bool   `long:"trace" description:"display detail error messages"`
+	Help      bool   `short:"h" long:"help" description:"print usage and exit"`
+	Version   bool   `short:"v" long:"version" description:"display the version of pget and exit"`
+	Procs     int    `short:"p" long:"procs" description:"split ratio to download file"`
+	TargetDir string `short:"d" long:"target-dir" description:"path to directory to store the downloaded file"`
+	Timeout   int    `short:"t" long:"timeout" description:"timeout of checking request in seconds"`
+	Update    bool   `long:"check-update" description:"check if there is update available"`
+	Trace     bool   `long:"trace" description:"display detail error messages"`
 }
 
 func (opts *Options) parse(argv []string) ([]string, error) {
@@ -39,13 +39,13 @@ func (opts Options) usage() []byte {
 	fmt.Fprintf(&buf, msg+
 		`Usage: pget [options] URL
   Options:
-  -h,  --help                      print usage and exit
-  -v,  --version                   display the version of pget and exit
-  -p,  --procs <num>               split ratio to download file
-  -o,  --output <PATH|FILENAME>    output file to PATH or FILENAME
-  -t,  --timeout <seconds>         timeout of checking request in seconds
-  --check-update                   check if there is update available
-  --trace                          display detail error messages
+  -h,  --help                   print usage and exit
+  -v,  --version                display the version of pget and exit
+  -p,  --procs <num>            split ratio to download file
+  -d,  --target-dir <PATH>    	path to the directory to save the downloaded file, filename will be taken from url
+  -t,  --timeout <seconds>      timeout of checking request in seconds
+  --check-update                check if there is update available
+  --trace                       display detail error messages
 `)
 	return buf.Bytes()
 }

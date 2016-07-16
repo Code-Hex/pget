@@ -106,9 +106,10 @@ func TBindwithFiles(t *testing.T) {
 	p.procs = 2
 
 	p.Utils = &Data{
-		filename: "test.tar.gz",
-		filesize: uint64(1719652),
-		dirname:  "_test.tar.gz",
+		filename:     "test.tar.gz",
+		filesize:     uint64(1719652),
+		dirname:      "_test.tar.gz",
+		fullfilename: "test.tar.gz",
 	}
 
 	fp := "_testdata/test.tar.gz"

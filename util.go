@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/ricochet2200/go-disk-usage/du"
 	"golang.org/x/net/context"
@@ -18,27 +17,29 @@ import (
 
 // Data struct has file of relational data
 type Data struct {
-	filename string
-	filesize uint64
-	dirname  string
+	filename     string
+	filesize     uint64
+	dirname      string
+	fullfilename string
 }
 
 // Utils interface indicate function
 type Utils interface {
-	SplitFilePath(string) (string, string, error)
 	ProgressBar(context.Context, *Ch)
 	BindwithFiles(int) error
 	IsFree(uint64) error
 	MakeRange(uint64, uint64, uint64) Range
+	URLFileName(string, string) string
 
 	// like setter
 	SetFileName(string)
-	URLFileName(string)
+	SetFullFileName(string, string)
 	SetDirName(string, string, int)
 	SetFileSize(uint64)
 
 	// like getter
 	FileName() string
+	FullFileName() string
 	FileSize() uint64
 	DirName() string
 }
@@ -50,6 +51,10 @@ func isDos() bool {
 // FileName get from Data structs member
 func (d Data) FileName() string {
 	return d.filename
+}
+
+func (d Data) FullFileName() string {
+	return d.fullfilename
 }
 
 // FileSize get from Data structs member
@@ -67,68 +72,21 @@ func (d *Data) SetFileSize(size uint64) {
 	d.filesize = size
 }
 
-// SplitFilePath will return filename and path from input
-func (d Data) SplitFilePath(output string) (string, string, error) {
-
-	// "~" does not exist on windows?
-	if isDos() {
-		split := strings.Split(output, "\\")
-
-		if len(split) == 1 {
-			return output, "", nil
-		}
-
-		// if "\Users\Name\filename\"
-		if split[len(split)-1] == "" {
-			file := split[len(split)-2]
-			path := strings.Join(split[:len(split)-2], "\\")
-			return file, path, nil
-		}
-
-		file := split[len(split)-1]
-		path := strings.Join(split[:len(split)-1], "\\")
-		return file, path, nil
+// SetFileName set to Data structs member
+func (d *Data) SetFullFileName(directory, filename string) {
+	if directory == "" {
+		d.fullfilename = fmt.Sprintf("%s", filename)
+	} else {
+		d.fullfilename = fmt.Sprintf("%s/%s", directory, filename)
 	}
-
-	split := strings.Split(output, "/")
-	if len(split) == 1 {
-		return output, "", nil
-	}
-
-	// home == "/Users/Name" in Unix
-	home, err := homedir.Dir()
-	if err != nil {
-		return "", "", err
-	}
-
-	// convert tilde to $HOME
-	if split[0] == "~" {
-		split[0] = home
-	} else if split[1] == "~" {
-		split[1] = home
-		split = split[1:]
-	}
-
-	// if "/Users/Name/filename/"
-	if split[len(split)-1] == "" {
-		file := split[len(split)-2]
-		path := strings.Join(split[:len(split)-2], "/")
-		return file, path, nil
-	}
-
-	file := split[len(split)-1]
-	path := strings.Join(split[:len(split)-1], "/")
-
-	return file, path, nil
 }
 
-// SetFileName set to Data structs member
-func (d *Data) SetFileName(output string) {
-	d.filename = output
+func (d *Data) SetFileName(filename string) {
+	d.filename = filename
 }
 
 // URLFileName set to Data structs member using url
-func (d *Data) URLFileName(url string) {
+func (d *Data) URLFileName(targetDir, url string) string {
 	token := strings.Split(url, "/")
 
 	// get of filename from url
@@ -139,15 +97,23 @@ func (d *Data) URLFileName(url string) {
 
 	filename := original
 
-	// create uniq filename
+	// create unique filename
 	for i := 1; true; i++ {
-		if _, err := os.Stat(filename); err == nil {
+		var filePath string
+		if targetDir == "" {
+			filePath = filename
+		} else {
+			filePath = fmt.Sprintf("%s/%s", targetDir, filename)
+		}
+
+		if _, err := os.Stat(filePath); err == nil {
 			filename = fmt.Sprintf("%s-%d", original, i)
 		} else {
 			break
 		}
 	}
-	d.filename = filename
+
+	return filename
 }
 
 // SetDirName set to Data structs member
@@ -251,7 +217,7 @@ func (d *Data) BindwithFiles(procs int) error {
 	filename := d.filename
 	dirname := d.dirname
 
-	fh, err := os.Create(filename)
+	fh, err := os.Create(d.fullfilename)
 	if err != nil {
 		return errors.Wrap(err, "failed to create a file in download location")
 	}
