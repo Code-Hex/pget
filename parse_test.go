@@ -20,8 +20,6 @@ func TestParts_of_ready(t *testing.T) {
 		"2",
 		url,
 		"--trace",
-		"-o",
-		"Hello.tar.gz",
 	}
 
 	p := New()
@@ -37,10 +35,8 @@ func TestParts_of_ready(t *testing.T) {
 		t.Errorf("failed to parse of url: %s", err)
 	}
 
-	p.SetFileName(opts.Output)
-	assert.Equal(t, p.FileName(), "Hello.tar.gz", "failed to parse arguments of output")
-
-	p.URLFileName(url)
+	filename := p.URLFileName(p.TargetDir, url)
+	p.SetFileName(filename)
 	assert.Equal(t, p.FileName(), "filename.tar.gz", "failed to get of filename from url")
 
 	fmt.Fprintf(os.Stdout, "parse_test Done\n\n")

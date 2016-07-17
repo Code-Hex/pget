@@ -3,8 +3,8 @@ package pget
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
@@ -19,10 +19,12 @@ const (
 type Pget struct {
 	Trace bool
 	Utils
-	procs   int
-	args    []string
-	url     string
-	timeout int
+	procs     int
+	args      []string
+	url       string
+	timeout   int
+	urls      []string
+	TargetDir string
 }
 
 type ignore struct {
@@ -65,12 +67,25 @@ func (pget *Pget) Run() error {
 		return pget.ErrTop(err)
 	}
 
-	if err := pget.download(); err != nil {
-		return err
-	}
+	for _, url := range pget.urls {
+		pget.url = url
+		filename := pget.Utils.URLFileName(pget.TargetDir, pget.url)
+		pget.SetFileName(filename)
+		pget.SetFullFileName(pget.TargetDir, filename)
+		pget.Utils.SetDirName(pget.TargetDir, filename, pget.procs)
 
-	if err := pget.Utils.BindwithFiles(pget.procs); err != nil {
-		return err
+		fmt.Fprintf(os.Stdout, "Checking now %s\n", pget.url)
+		if err := pget.Checking(); err != nil {
+			return errors.Wrap(err, "failed to check header")
+		}
+
+		if err := pget.download(); err != nil {
+			return err
+		}
+
+		if err := pget.Utils.BindwithFiles(pget.procs); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -102,31 +117,23 @@ func (pget *Pget) ready() error {
 		return errors.Wrap(err, "failed to parse of url")
 	}
 
-	if opts.Output != "" {
-		abs, err := filepath.Abs(opts.Output)
+	if opts.TargetDir != "" {
+		info, err := os.Stat(opts.TargetDir)
 		if err != nil {
-			return errors.Wrap(err, "failed to parse of output")
+			if !os.IsNotExist(err) {
+				return errors.Wrap(err, "target dir is invalid")
+			}
+
+			if err := os.MkdirAll(opts.TargetDir, 0755); err != nil {
+				return errors.Wrapf(err, "failed to create diretory at %s", opts.TargetDir)
+			}
+
+		} else if !info.IsDir() {
+			return errors.New("target dir is not a valid directory")
 		}
-
-		file, path, err := pget.Utils.SplitFilePath(abs)
-		if err != nil {
-			return errors.Wrap(err, "failed to parse of output")
-		}
-		pget.Utils.SetFileName(file)
-
-		// directory name use to parallel download
-		pget.Utils.SetDirName(path, file, pget.procs)
-	} else {
-		pget.Utils.URLFileName(pget.url)
-
-		// directory name use to parallel download
-		pget.Utils.SetDirName("", pget.Utils.FileName(), pget.procs)
 	}
-
-	fmt.Fprintf(os.Stdout, "Checking now %s\n", pget.url)
-	if err := pget.Checking(); err != nil {
-		return errors.Wrap(err, "failed to check header")
-	}
+	opts.TargetDir = strings.TrimSuffix(opts.TargetDir, "/")
+	pget.TargetDir = opts.TargetDir
 
 	return nil
 }
@@ -188,13 +195,12 @@ func (pget *Pget) parseURLs() error {
 	// find url in args
 	for _, argv := range pget.args {
 		if govalidator.IsURL(argv) {
-			pget.url = argv
-			break
+			pget.urls = append(pget.urls, argv)
 		}
 	}
 
-	if pget.url == "" {
-		return errors.New("url has not been set in argument")
+	if len(pget.urls) < 1 {
+		return errors.New("urls not found in the arguments passed")
 	}
 
 	return nil

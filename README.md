@@ -31,6 +31,7 @@ Update
 ## Synopsis
 
     % pget -p 6 URL
+    % pget -p 6 URL1 URL2 URL3
 
 ## Options
 
@@ -39,7 +40,7 @@ Update
   -h,  --help                      print usage and exit
   -v,  --version                   display the version of pget and exit
   -p,  --procs <num>               split ratio to download file
-  -o,  --output <PATH|FILENAME>    output file to PATH or FILENAME
+  -d,  --target--dir               path to the directory to save the downloaded files, filename will be taken from url
   -t,  --timeout <seconds>         timeout of checking request in seconds
   --check-update                   check if there is update available
   --trace                          display detail error messages
