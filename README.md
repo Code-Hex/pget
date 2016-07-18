@@ -37,13 +37,14 @@ Update
 
 ```
   Options:
-  -h,  --help                      print usage and exit
-  -v,  --version                   display the version of pget and exit
-  -p,  --procs <num>               split ratio to download file
-  -d,  --target--dir               path to the directory to save the downloaded files, filename will be taken from url
-  -t,  --timeout <seconds>         timeout of checking request in seconds
-  --check-update                   check if there is update available
-  --trace                          display detail error messages
+  -h,  --help                   print usage and exit
+  -v,  --version                display the version of pget and exit
+  -p,  --procs <num>            split ratio to download file
+  -d,  --target-dir <PATH>    	path to the directory to save the downloaded file, filename will be taken from url
+  -t,  --timeout <seconds>      timeout of checking request in seconds
+  -u,  --user-agent <AGENT>     identify as AGENT
+  --check-update                check if there is update available
+  --trace                       display detail error messages
 ```
 
 ## Pget vs Wget
