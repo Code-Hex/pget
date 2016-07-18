@@ -54,14 +54,14 @@ func TChecking(t *testing.T, url string) {
 	fmt.Fprintf(os.Stdout, "Testing checking_test\n")
 
 	p := New()
-	p.url = url
+	p.urls = append(p.urls, url)
 
 	if err := p.Checking(); err != nil {
 		t.Errorf("failed to check header: %s", err)
 	}
 
 	// could redirect?
-	assert.NotEqual(t, p.url, url, "failed to get of the last url in the redirect")
+	assert.NotEqual(t, p.targetURLs[0], url, "failed to get of the last url in the redirect")
 	fmt.Fprintf(os.Stdout, "checking_test Done\n\n")
 }
 
@@ -70,7 +70,7 @@ func TDownload(t *testing.T, url string) {
 
 	p := New()
 
-	p.url = url
+	p.urls = append(p.urls, url)
 	p.Utils = &Data{
 		filename: "test.tar.gz",
 		dirname:  "_test.tar.gz",
@@ -86,7 +86,7 @@ func TDownload(t *testing.T, url string) {
 
 	p.procs = 2
 
-	if err := p.download(); err != nil {
+	if err := p.Download(); err != nil {
 		t.Errorf("failed to download: %s", err)
 	}
 

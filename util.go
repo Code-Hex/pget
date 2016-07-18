@@ -53,6 +53,7 @@ func (d Data) FileName() string {
 	return d.filename
 }
 
+// FullFileName get from Data structs member
 func (d Data) FullFileName() string {
 	return d.fullfilename
 }
@@ -72,7 +73,7 @@ func (d *Data) SetFileSize(size uint64) {
 	d.filesize = size
 }
 
-// SetFileName set to Data structs member
+// SetFullFileName set to Data structs member
 func (d *Data) SetFullFileName(directory, filename string) {
 	if directory == "" {
 		d.fullfilename = fmt.Sprintf("%s", filename)
@@ -81,6 +82,7 @@ func (d *Data) SetFullFileName(directory, filename string) {
 	}
 }
 
+// SetFileName set to Data structs member
 func (d *Data) SetFileName(filename string) {
 	d.filename = filename
 }

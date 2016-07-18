@@ -1,12 +1,12 @@
 hash: c0550ab4097b6f78b12920db968a7a6e1aaf8a754e45e90be0ebaf6553c0d3b0
-updated: 2016-07-12T19:26:40.448143727+09:00
+updated: 2016-07-18T11:37:07.219211442+09:00
 imports:
 - name: github.com/antonholmquist/jason
   version: 423803175a265e07c3f35cd8faf009eac345efb8
 - name: github.com/asaskevich/govalidator
-  version: df81827fdd59d8b4fb93d8910b286ab7a3919520
+  version: 593d64559f7600f29581a3ee42177f5dbded27a9
 - name: github.com/Code-Hex/pget
-  version: 9e372143b26e70db348f3623068f53496a098ec6
+  version: 0ec0f74cc43ec916bf9d1bbbaadd0aaf36f6f071
 - name: github.com/Code-Hex/updater
   version: c3f2786725200723369a8f97b8b24bb19fe3baf4
 - name: github.com/jessevdk/go-flags
@@ -22,12 +22,12 @@ imports:
   subpackages:
   - du
 - name: golang.org/x/net
-  version: f841c39de738b1d0df95b5a7187744f0e03d8112
+  version: 3797cd8864994d713d909eda5e61ede8683fdc12
   subpackages:
   - context
   - context/ctxhttp
 - name: gopkg.in/cheggaaa/pb.v1
-  version: 04b234c80d661c663dbcebd52fc7218fdacc6d0c
+  version: 9453b2db37f4d8bc63751daca63bbe7049eb5e74
 testImports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
@@ -43,7 +43,7 @@ testImports:
 - name: github.com/mholt/archiver
   version: a075791974ee7d363104fde72b5e009515cc0def
 - name: github.com/nwaples/rardecode
-  version: a59299d0638a4837ddf623507748be79ab19174a
+  version: 7b958952f24d53002760f1d46367a1e57a4e8aa1
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:

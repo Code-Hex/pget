@@ -1,7 +1,6 @@
 package pget
 
 import (
-	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -19,12 +18,12 @@ const (
 type Pget struct {
 	Trace bool
 	Utils
-	procs     int
-	args      []string
-	url       string
-	timeout   int
-	urls      []string
-	TargetDir string
+	procs      int
+	args       []string
+	timeout    int
+	urls       []string
+	targetURLs []string
+	TargetDir  string
 }
 
 type ignore struct {
@@ -63,35 +62,27 @@ func (pget Pget) ErrTop(err error) error {
 
 // Run execute methods in pget package
 func (pget *Pget) Run() error {
-	if err := pget.ready(); err != nil {
+	if err := pget.Ready(); err != nil {
 		return pget.ErrTop(err)
 	}
 
-	for _, url := range pget.urls {
-		pget.url = url
-		filename := pget.Utils.URLFileName(pget.TargetDir, pget.url)
-		pget.SetFileName(filename)
-		pget.SetFullFileName(pget.TargetDir, filename)
-		pget.Utils.SetDirName(pget.TargetDir, filename, pget.procs)
+	if err := pget.Checking(); err != nil {
+		return errors.Wrap(err, "failed to check header")
+	}
 
-		fmt.Fprintf(os.Stdout, "Checking now %s\n", pget.url)
-		if err := pget.Checking(); err != nil {
-			return errors.Wrap(err, "failed to check header")
-		}
+	if err := pget.Download(); err != nil {
+		return err
+	}
 
-		if err := pget.download(); err != nil {
-			return err
-		}
-
-		if err := pget.Utils.BindwithFiles(pget.procs); err != nil {
-			return err
-		}
+	if err := pget.Utils.BindwithFiles(pget.procs); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (pget *Pget) ready() error {
+// Ready method define the variables required to Download.
+func (pget *Pget) Ready() error {
 	if procs := os.Getenv("GOMAXPROCS"); procs == "" {
 		runtime.GOMAXPROCS(pget.procs)
 	}
@@ -134,6 +125,11 @@ func (pget *Pget) ready() error {
 	}
 	opts.TargetDir = strings.TrimSuffix(opts.TargetDir, "/")
 	pget.TargetDir = opts.TargetDir
+
+	filename := pget.Utils.URLFileName(pget.TargetDir, pget.urls[0])
+	pget.SetFileName(filename)
+	pget.SetFullFileName(pget.TargetDir, filename)
+	pget.Utils.SetDirName(pget.TargetDir, filename, pget.procs)
 
 	return nil
 }

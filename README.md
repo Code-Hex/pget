@@ -5,7 +5,7 @@ Pget - parallel file download client
 [![Coverage Status](https://coveralls.io/repos/github/Code-Hex/pget/badge.svg?branch=master)](https://coveralls.io/github/Code-Hex/pget?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Code-Hex/pget)](https://goreportcard.com/report/github.com/Code-Hex/pget)
 [![GitHub release](https://img.shields.io/github/release/Code-Hex/pget.svg)](https://github.com/Code-Hex/pget)
-[![License (GPL version 3)](https://img.shields.io/badge/license-GNU%20GPL%20version%203-blue.svg?style=flat-square)](http://opensource.org/licenses/GPL-3.0)
+[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 ## Description
 
 Download using a parallel requests
@@ -30,8 +30,8 @@ Update
 
 ## Synopsis
 
-    % pget -p 6 URL
-    % pget -p 6 URL1 URL2 URL3
+    % pget -p 6 URL 
+    % pget -p 6 MIRROR1 MIRROR2 MIRROR3
 
 ## Options
 
