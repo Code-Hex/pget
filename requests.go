@@ -14,68 +14,72 @@ import (
 
 // Range struct for range access
 type Range struct {
-	low    uint64
-	high   uint64
-	worker uint64
+	low    uint
+	high   uint
+	worker uint
 }
 
 func isNotLastURL(url, purl string) bool {
 	return url != purl && url != ""
 }
 
-func isLastProc(i, procs uint64) bool {
+func isLastProc(i, procs uint) bool {
 	return i == procs-1
 }
 
 // Checking is check to can request
 func (p *Pget) Checking() error {
 
-	// checking
-	client := &http.Client{
-		Timeout: time.Duration(p.timeout) * time.Second,
-	}
+	ctx, cancelAll := context.WithTimeout(context.Background(), time.Duration(p.timeout)*time.Second)
 
-	ctx, cancelAll := context.WithCancel(context.Background())
 	ch := MakeCh()
 	defer ch.Close()
 
-	for _, url := range p.urls {
+	for _, url := range p.URLs {
 		fmt.Fprintf(os.Stdout, "Checking now %s\n", url)
-		go p.CheckMirrors(ctx, client, url, ch)
+		go p.CheckMirrors(ctx, url, ch)
 	}
 
 	// listen for error or size channel
-	size, err := ch.CheckingListen(ctx, cancelAll, len(p.urls))
+	size, err := ch.CheckingListen(ctx, cancelAll, len(p.URLs))
 	if err != nil {
 		return err
 	}
 
-	p.SetFileSize(uint64(size))
+	filename := p.Utils.URLFileName(p.TargetDir, p.TargetURLs[0])
+	p.SetFileName(filename)
+	p.SetFullFileName(p.TargetDir, filename)
+	p.Utils.SetDirName(p.TargetDir, filename, p.Procs)
+
+	p.SetFileSize(size)
 
 	return nil
 }
 
 // CheckMirrors method check be able to range access. also get redirected url.
-func (p *Pget) CheckMirrors(ctx context.Context, client *http.Client, url string, ch *Ch) {
-	res, err := ctxhttp.Get(ctx, client, url)
+func (p *Pget) CheckMirrors(ctx context.Context, url string, ch *Ch) {
+
+	res, err := ctxhttp.Head(ctx, http.DefaultClient, url)
 	if res != nil {
 		res.Body.Close()
 	}
 	if err != nil {
 		ch.Err <- errors.Wrap(err, "failed to head request: "+url)
+		return
 	}
 
 	if res.Header.Get("Accept-Ranges") != "bytes" {
 		ch.Err <- errors.Errorf("not supported range access: %s", url)
+		return
 	}
 
 	// To perform with the correct "range access"
 	// get the last url in the redirect
 	_url := res.Request.URL.String()
 	if isNotLastURL(_url, url) {
-		p.targetURLs = append(p.targetURLs, _url)
+		p.TargetURLs = append(p.TargetURLs, _url)
 	} else {
-		p.targetURLs = append(p.targetURLs, url)
+		p.TargetURLs = append(p.TargetURLs, url)
 	}
 
 	// get of ContentLength
@@ -90,7 +94,7 @@ func (p *Pget) CheckMirrors(ctx context.Context, client *http.Client, url string
 // Download method distributes the task to each goroutine for each URL
 func (p *Pget) Download() error {
 
-	procs := uint64(p.procs)
+	procs := uint(p.Procs)
 
 	filesize := p.FileSize()
 	dirname := p.DirName()
@@ -128,19 +132,19 @@ func (p *Pget) Download() error {
 }
 
 // Assignment method that to each goroutine gives the task
-func (p Pget) Assignment(totalActiveProcs *int, ctx context.Context, procs, split uint64, ch *Ch) {
+func (p Pget) Assignment(totalActiveProcs *int, ctx context.Context, procs, split uint, ch *Ch) {
 	filename := p.FileName()
 	dirname := p.DirName()
 
-	assignment := uint64(p.procs / len(p.targetURLs))
+	assignment := uint(p.Procs / len(p.TargetURLs))
 
 	var lasturl string
-	for i := uint64(0); i < procs; i++ {
+	for i := uint(0); i < procs; i++ {
 		partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, procs, i)
 		r := p.Utils.MakeRange(i, split, procs)
 
 		if info, err := os.Stat(partName); err == nil {
-			infosize := uint64(info.Size())
+			infosize := uint(info.Size())
 			//check if the part is fully downloaded
 			if isLastProc(i, procs) {
 				if infosize == r.high-r.low {
@@ -157,13 +161,13 @@ func (p Pget) Assignment(totalActiveProcs *int, ctx context.Context, procs, spli
 
 		*totalActiveProcs++
 
-		url := p.targetURLs[0]
+		url := p.TargetURLs[0]
 
 		// give efficiency and equality work
-		if uint64(*totalActiveProcs-1)%assignment == 0 {
+		if uint(*totalActiveProcs-1)%assignment == 0 {
 			// Like shift method
-			if len(p.targetURLs) > 1 {
-				p.targetURLs = p.targetURLs[1:]
+			if len(p.TargetURLs) > 1 {
+				p.TargetURLs = p.TargetURLs[1:]
 			}
 
 			// check whether to output the message
@@ -194,7 +198,7 @@ func (p Pget) Requests(ctx context.Context, r Range, filename, dirname, url stri
 
 	defer res.Body.Close()
 
-	partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, p.procs, r.worker)
+	partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, p.Procs, r.worker)
 	output, err := os.OpenFile(partName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to create %s in %s", filename, dirname))
@@ -208,7 +212,7 @@ func (p Pget) Requests(ctx context.Context, r Range, filename, dirname, url stri
 }
 
 // MakeResponse return *http.Response include context and range header
-func (p *Pget) MakeResponse(ctx context.Context, low, high, worker uint64, url string) (*http.Response, error) {
+func (p *Pget) MakeResponse(ctx context.Context, low, high, worker uint, url string) (*http.Response, error) {
 	// create get request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -217,6 +221,11 @@ func (p *Pget) MakeResponse(ctx context.Context, low, high, worker uint64, url s
 
 	// set download ranges
 	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", low, high))
+
+	// set user agent
+	if p.useragent != "" {
+		req.Header.Set("User-Agent", p.useragent)
+	}
 
 	return ctxhttp.Do(ctx, http.DefaultClient, req)
 }

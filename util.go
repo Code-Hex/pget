@@ -18,7 +18,7 @@ import (
 // Data struct has file of relational data
 type Data struct {
 	filename     string
-	filesize     uint64
+	filesize     uint
 	dirname      string
 	fullfilename string
 }
@@ -27,20 +27,21 @@ type Data struct {
 type Utils interface {
 	ProgressBar(context.Context, *Ch)
 	BindwithFiles(int) error
-	IsFree(uint64) error
-	MakeRange(uint64, uint64, uint64) Range
+	IsFree(uint) error
+	Progress(string) (int64, error)
+	MakeRange(uint, uint, uint) Range
 	URLFileName(string, string) string
 
 	// like setter
 	SetFileName(string)
 	SetFullFileName(string, string)
 	SetDirName(string, string, int)
-	SetFileSize(uint64)
+	SetFileSize(uint)
 
 	// like getter
 	FileName() string
 	FullFileName() string
-	FileSize() uint64
+	FileSize() uint
 	DirName() string
 }
 
@@ -59,7 +60,7 @@ func (d Data) FullFileName() string {
 }
 
 // FileSize get from Data structs member
-func (d Data) FileSize() uint64 {
+func (d Data) FileSize() uint {
 	return d.filesize
 }
 
@@ -69,7 +70,7 @@ func (d Data) DirName() string {
 }
 
 // SetFileSize set to Data structs member
-func (d *Data) SetFileSize(size uint64) {
+func (d *Data) SetFileSize(size uint) {
 	d.filesize = size
 }
 
@@ -128,19 +129,19 @@ func (d *Data) SetDirName(path, filename string, procs int) {
 
 }
 
-func (d Data) freeSpace() (freespace uint64) {
+func (d Data) freeSpace() (freespace uint) {
 
 	if isDos() {
-		freespace = du.NewDiskUsage("C:\\").Free()
+		freespace = uint(du.NewDiskUsage("C:\\").Free())
 	} else {
-		freespace = du.NewDiskUsage("/").Free()
+		freespace = uint(du.NewDiskUsage("/").Free())
 	}
 
 	return
 }
 
 // IsFree is check your disk space for size needed to download
-func (d Data) IsFree(split uint64) error {
+func (d Data) IsFree(split uint) error {
 	want := d.filesize + split
 	if d.freeSpace() < want {
 		return errors.Errorf("there is not sufficient free space in a disk")
@@ -149,7 +150,12 @@ func (d Data) IsFree(split uint64) error {
 	return nil
 }
 
-func (d Data) subDirsize(dirname string) (int64, error) {
+// Progress In order to confirm the degree of progress
+func (d Data) Progress(dirname string) (int64, error) {
+	return subDirsize(dirname)
+}
+
+func subDirsize(dirname string) (int64, error) {
 	var size int64
 	err := filepath.Walk(dirname, func(_ string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
@@ -162,7 +168,7 @@ func (d Data) subDirsize(dirname string) (int64, error) {
 }
 
 // MakeRange will return Range struct to download function
-func (d *Data) MakeRange(i, split, procs uint64) Range {
+func (d *Data) MakeRange(i, split, procs uint) Range {
 	low := split * i
 	high := low + split - 1
 	if i == procs-1 {
@@ -189,7 +195,7 @@ func (d Data) ProgressBar(ctx context.Context, ch *Ch) {
 		case <-ctx.Done():
 			return
 		default:
-			size, err := d.subDirsize(dirname)
+			size, err := d.Progress(dirname)
 			if err != nil {
 				ch.Err <- errors.Wrap(err, "failed to get directory size")
 				return

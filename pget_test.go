@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 
@@ -28,10 +29,10 @@ func TestPget(t *testing.T) {
 	})
 
 	mux.HandleFunc("/mooo", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/file", http.StatusFound)
+		http.Redirect(w, r, "/test.tar.gz", http.StatusFound)
 	})
 
-	mux.HandleFunc("/file", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/test.tar.gz", func(w http.ResponseWriter, r *http.Request) {
 		fp := "_testdata/test.tar.gz"
 		data, err := ioutil.ReadFile(fp)
 		if err != nil {
@@ -54,23 +55,24 @@ func TChecking(t *testing.T, url string) {
 	fmt.Fprintf(os.Stdout, "Testing checking_test\n")
 
 	p := New()
-	p.urls = append(p.urls, url)
+	p.URLs = append(p.URLs, url)
 
 	if err := p.Checking(); err != nil {
 		t.Errorf("failed to check header: %s", err)
 	}
 
 	// could redirect?
-	assert.NotEqual(t, p.targetURLs[0], url, "failed to get of the last url in the redirect")
+	assert.NotEqual(t, p.TargetURLs[0], url, "failed to get of the last url in the redirect")
 	fmt.Fprintf(os.Stdout, "checking_test Done\n\n")
 }
 
 func TDownload(t *testing.T, url string) {
 	fmt.Fprintf(os.Stdout, "Testing download_test\n")
 
+	dir := fmt.Sprintf("_test.tar.gz.%d", runtime.NumCPU())
 	p := New()
 
-	p.urls = append(p.urls, url)
+	p.URLs = append(p.URLs, url)
 	p.Utils = &Data{
 		filename: "test.tar.gz",
 		dirname:  "_test.tar.gz",
@@ -81,19 +83,21 @@ func TDownload(t *testing.T, url string) {
 	}
 
 	assert.Equal(t, p.FileName(), "test.tar.gz", "expected 'test.tar.gz' got %s", p.FileName())
-	assert.Equal(t, p.DirName(), "_test.tar.gz", "expected '_test.tar.gz' got %s", p.DirName())
-	assert.Equal(t, p.FileSize(), uint64(1719652), "expected '1719652' got %d", p.DirName())
+	assert.Equal(t, p.DirName(), dir, "expected '"+dir+"' got %s", p.DirName())
+	assert.Equal(t, p.FileSize(), uint(1719652), "expected '1719652' got %d", p.DirName())
 
-	p.procs = 2
+	p.Procs = runtime.NumCPU()
 
 	if err := p.Download(); err != nil {
 		t.Errorf("failed to download: %s", err)
 	}
 
 	// check of the file to exists
-	for i := 0; i < p.procs; i++ {
-		_, err := os.Stat(fmt.Sprintf("_test.tar.gz/test.tar.gz-%d", i))
-		assert.NotNil(t, err)
+	for i := 0; i < p.Procs; i++ {
+		_, err := os.Stat(fmt.Sprintf("_test.tar.gz.4/test.tar.gz.2.%d", i))
+		if err == nil {
+			t.Errorf("file not exist: %s", err)
+		}
 	}
 
 	fmt.Fprintf(os.Stdout, "download_test Done\n\n")
@@ -102,13 +106,15 @@ func TDownload(t *testing.T, url string) {
 func TBindwithFiles(t *testing.T) {
 	fmt.Fprintf(os.Stdout, "Testing bind_test\n")
 
+	dir := fmt.Sprintf("_test.tar.gz.%d", runtime.NumCPU())
+
 	p := New()
-	p.procs = 2
+	p.Procs = runtime.NumCPU()
 
 	p.Utils = &Data{
 		filename:     "test.tar.gz",
-		filesize:     uint64(1719652),
-		dirname:      "_test.tar.gz",
+		filesize:     uint(1719652),
+		dirname:      dir,
 		fullfilename: "test.tar.gz",
 	}
 
@@ -119,7 +125,7 @@ func TBindwithFiles(t *testing.T) {
 		t.Errorf("failed to md5sum of original file: %s", err)
 	}
 
-	if err := p.BindwithFiles(p.procs); err != nil {
+	if err := p.BindwithFiles(p.Procs); err != nil {
 		t.Errorf("failed to BindwithFiles: %s", err)
 	}
 

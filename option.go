@@ -17,6 +17,7 @@ type Options struct {
 	Procs     int    `short:"p" long:"procs" description:"split ratio to download file"`
 	TargetDir string `short:"d" long:"target-dir" description:"path to directory to store the downloaded file"`
 	Timeout   int    `short:"t" long:"timeout" description:"timeout of checking request in seconds"`
+	UserAgent string `short:"u" long:"user-agent" description:"identify as AGENT"`
 	Update    bool   `long:"check-update" description:"check if there is update available"`
 	Trace     bool   `long:"trace" description:"display detail error messages"`
 }
@@ -44,6 +45,7 @@ func (opts Options) usage() []byte {
   -p,  --procs <num>            split ratio to download file
   -d,  --target-dir <PATH>    	path to the directory to save the downloaded file, filename will be taken from url
   -t,  --timeout <seconds>      timeout of checking request in seconds
+  -u,  --user-agent <AGENT>     identify as AGENT
   --check-update                check if there is update available
   --trace                       display detail error messages
 `)

@@ -13,8 +13,8 @@ func TestErrors(t *testing.T) {
 	p := New()
 
 	// echo 🍠 | md5 == "Hash browns"
-	p.targetURLs = append(p.targetURLs, "http://b721d4258a46e85d64807a3c407d01ac.com/filename.dat")
-	p.procs = 2
+	p.TargetURLs = append(p.TargetURLs, "http://b721d4258a46e85d64807a3c407d01ac.com/filename.dat")
+	p.Procs = 2
 	p.Utils = &Data{
 		filename: "filename.dat",
 		dirname:  "_filename.dat",

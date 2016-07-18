@@ -1,12 +1,12 @@
 hash: c0550ab4097b6f78b12920db968a7a6e1aaf8a754e45e90be0ebaf6553c0d3b0
-updated: 2016-07-18T11:37:07.219211442+09:00
+updated: 2016-07-18T23:51:33.064157982+09:00
 imports:
 - name: github.com/antonholmquist/jason
   version: 423803175a265e07c3f35cd8faf009eac345efb8
 - name: github.com/asaskevich/govalidator
   version: 593d64559f7600f29581a3ee42177f5dbded27a9
 - name: github.com/Code-Hex/pget
-  version: 0ec0f74cc43ec916bf9d1bbbaadd0aaf36f6f071
+  version: fb5f02432f16a97ba615e8170b94f88d9c565441
 - name: github.com/Code-Hex/updater
   version: c3f2786725200723369a8f97b8b24bb19fe3baf4
 - name: github.com/jessevdk/go-flags

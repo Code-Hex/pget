@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	version = "0.0.3"
+	version = "0.0.4"
 	msg     = "Pget v" + version + ", parallel file download client\n"
 )
 
@@ -18,12 +18,13 @@ const (
 type Pget struct {
 	Trace bool
 	Utils
-	procs      int
+	TargetDir  string
+	Procs      int
+	URLs       []string
+	TargetURLs []string
 	args       []string
 	timeout    int
-	urls       []string
-	targetURLs []string
-	TargetDir  string
+	useragent  string
 }
 
 type ignore struct {
@@ -39,7 +40,7 @@ func New() *Pget {
 	return &Pget{
 		Trace:   false,
 		Utils:   &Data{},
-		procs:   runtime.NumCPU(), // default
+		Procs:   runtime.NumCPU(), // default
 		timeout: 10,
 	}
 }
@@ -74,7 +75,7 @@ func (pget *Pget) Run() error {
 		return err
 	}
 
-	if err := pget.Utils.BindwithFiles(pget.procs); err != nil {
+	if err := pget.Utils.BindwithFiles(pget.Procs); err != nil {
 		return err
 	}
 
@@ -84,7 +85,7 @@ func (pget *Pget) Run() error {
 // Ready method define the variables required to Download.
 func (pget *Pget) Ready() error {
 	if procs := os.Getenv("GOMAXPROCS"); procs == "" {
-		runtime.GOMAXPROCS(pget.procs)
+		runtime.GOMAXPROCS(pget.Procs)
 	}
 
 	var opts Options
@@ -97,7 +98,7 @@ func (pget *Pget) Ready() error {
 	}
 
 	if opts.Procs > 2 {
-		pget.procs = opts.Procs
+		pget.Procs = opts.Procs
 	}
 
 	if opts.Timeout > 0 {
@@ -106,6 +107,10 @@ func (pget *Pget) Ready() error {
 
 	if err := pget.parseURLs(); err != nil {
 		return errors.Wrap(err, "failed to parse of url")
+	}
+
+	if opts.UserAgent != "" {
+		pget.useragent = opts.UserAgent
 	}
 
 	if opts.TargetDir != "" {
@@ -125,11 +130,6 @@ func (pget *Pget) Ready() error {
 	}
 	opts.TargetDir = strings.TrimSuffix(opts.TargetDir, "/")
 	pget.TargetDir = opts.TargetDir
-
-	filename := pget.Utils.URLFileName(pget.TargetDir, pget.urls[0])
-	pget.SetFileName(filename)
-	pget.SetFullFileName(pget.TargetDir, filename)
-	pget.Utils.SetDirName(pget.TargetDir, filename, pget.procs)
 
 	return nil
 }
@@ -191,11 +191,11 @@ func (pget *Pget) parseURLs() error {
 	// find url in args
 	for _, argv := range pget.args {
 		if govalidator.IsURL(argv) {
-			pget.urls = append(pget.urls, argv)
+			pget.URLs = append(pget.URLs, argv)
 		}
 	}
 
-	if len(pget.urls) < 1 {
+	if len(pget.URLs) < 1 {
 		return errors.New("urls not found in the arguments passed")
 	}
 
