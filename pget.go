@@ -1,6 +1,7 @@
 package pget
 
 import (
+	"bufio"
 	"os"
 	"runtime"
 	"strings"
@@ -196,7 +197,24 @@ func (pget *Pget) parseURLs() error {
 	}
 
 	if len(pget.URLs) < 1 {
-		return errors.New("urls not found in the arguments passed")
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			scan := scanner.Text()
+			urls := strings.Split(scan, " ")
+			for _, url := range urls {
+				if govalidator.IsURL(url) {
+					pget.URLs = append(pget.URLs, url)
+				}
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			return errors.Wrap(err, "failed to parse url from stdin")
+		}
+
+		if len(pget.URLs) < 1 {
+			return errors.New("urls not found in the arguments passed")
+		}
 	}
 
 	return nil
