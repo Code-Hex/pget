@@ -2,6 +2,7 @@ package pget
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -197,6 +198,8 @@ func (pget *Pget) parseURLs() error {
 	}
 
 	if len(pget.URLs) < 1 {
+		fmt.Fprintf(os.Stdout, "Please input url separate with space or newline\n")
+		fmt.Fprintf(os.Stdout, "Start download at ^D\n")
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			scan := scanner.Text()
