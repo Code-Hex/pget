@@ -141,11 +141,13 @@ func (p Pget) Assignment(totalActiveProcs *int, ctx context.Context, procs, spli
 	var lasturl string
 	for i := uint(0); i < procs; i++ {
 		partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, procs, i)
+
+		// make range
 		r := p.Utils.MakeRange(i, split, procs)
 
 		if info, err := os.Stat(partName); err == nil {
 			infosize := uint(info.Size())
-			//check if the part is fully downloaded
+			// check if the part is fully downloaded
 			if isLastProc(i, procs) {
 				if infosize == r.high-r.low {
 					continue
