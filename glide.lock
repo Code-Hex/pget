@@ -1,12 +1,12 @@
 hash: c0550ab4097b6f78b12920db968a7a6e1aaf8a754e45e90be0ebaf6553c0d3b0
-updated: 2016-07-18T23:51:33.064157982+09:00
+updated: 2016-08-05T12:17:43.497968374+09:00
 imports:
 - name: github.com/antonholmquist/jason
   version: 423803175a265e07c3f35cd8faf009eac345efb8
 - name: github.com/asaskevich/govalidator
   version: 593d64559f7600f29581a3ee42177f5dbded27a9
 - name: github.com/Code-Hex/pget
-  version: fb5f02432f16a97ba615e8170b94f88d9c565441
+  version: b35d5a6ab91837012798a66aefb2642b4cda9371
 - name: github.com/Code-Hex/updater
   version: c3f2786725200723369a8f97b8b24bb19fe3baf4
 - name: github.com/jessevdk/go-flags
@@ -16,13 +16,13 @@ imports:
 - name: github.com/mitchellh/go-homedir
   version: 756f7b183b7ab78acdbbee5c7f392838ed459dda
 - name: github.com/pkg/errors
-  version: a2d6902c6d2a2f194eb3fb474981ab7867c81505
+  version: 2a9be18ecd8c148be18be08a811e33809206da19
 - name: github.com/ricochet2200/go-disk-usage
   version: f0d1b743428fc09792f93233d9412f89f88fa2ab
   subpackages:
   - du
 - name: golang.org/x/net
-  version: 3797cd8864994d713d909eda5e61ede8683fdc12
+  version: 7c62cfdcccc65f87b0120ec841012ba816fc1aec
   subpackages:
   - context
   - context/ctxhttp
@@ -43,7 +43,7 @@ testImports:
 - name: github.com/mholt/archiver
   version: a075791974ee7d363104fde72b5e009515cc0def
 - name: github.com/nwaples/rardecode
-  version: 7b958952f24d53002760f1d46367a1e57a4e8aa1
+  version: f94841372ddc36be531a5c3e1206238e32e93d74
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
