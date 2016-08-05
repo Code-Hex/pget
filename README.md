@@ -33,6 +33,17 @@ Update
     % pget -p 6 URL 
     % pget -p 6 MIRROR1 MIRROR2 MIRROR3
 
+If you have created such as this file
+
+    cat list.txt
+    MIRROR1
+    MIRROR2
+    MIRROR3
+
+You can do this
+
+    cat list.txt | pget -p 6
+
 ## Options
 
 ```
