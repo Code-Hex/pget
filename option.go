@@ -45,11 +45,11 @@ func (opts Options) usage() []byte {
   -h,  --help                   print usage and exit
   -v,  --version                display the version of pget and exit
   -p,  --procs <num>            split ratio to download file
-  -o,  --output <filename>      output file to FILENAME
-  -d,  --target-dir <PATH>    	path to the directory to save the downloaded file, filename will be taken from url
+  -o,  --output <filename>      output file to <filename>
+  -d,  --target-dir <path>    	path to the directory to save the downloaded file, filename will be taken from url
   -t,  --timeout <seconds>      timeout of checking request in seconds
-  -u,  --user-agent <AGENT>     identify as AGENT
-  -r,  --referer <REFERER>      identify as REFERER
+  -u,  --user-agent <agent>     identify as <agent>
+  -r,  --referer <referer>      identify as <referer>
   --check-update                check if there is update available
   --trace                       display detail error messages
 `)
