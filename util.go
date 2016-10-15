@@ -25,7 +25,7 @@ type Data struct {
 
 // Utils interface indicate function
 type Utils interface {
-	ProgressBar(context.Context, *Ch)
+	ProgressBar(context.Context) error
 	BindwithFiles(int) error
 	IsFree(uint) error
 	Progress(string) (int64, error)
@@ -183,7 +183,7 @@ func (d *Data) MakeRange(i, split, procs uint) Range {
 }
 
 // ProgressBar is to show progressbar
-func (d Data) ProgressBar(ctx context.Context, ch *Ch) {
+func (d Data) ProgressBar(ctx context.Context) error {
 	filesize := int64(d.filesize)
 	dirname := d.dirname
 
@@ -193,12 +193,11 @@ func (d Data) ProgressBar(ctx context.Context, ch *Ch) {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		default:
 			size, err := d.Progress(dirname)
 			if err != nil {
-				ch.Err <- errors.Wrap(err, "failed to get directory size")
-				return
+				return errors.Wrap(err, "failed to get directory size")
 			}
 
 			if size < filesize {
@@ -206,8 +205,7 @@ func (d Data) ProgressBar(ctx context.Context, ch *Ch) {
 			} else {
 				bar.Set64(filesize)
 				bar.Finish()
-				ch.Done <- true
-				return
+				return nil
 			}
 
 			// To save cpu resource

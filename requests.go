@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/net/context/ctxhttp"
+	"golang.org/x/sync/errgroup"
 )
 
 // Range struct for range access
@@ -64,9 +65,6 @@ func (p *Pget) Checking() error {
 func (p *Pget) CheckMirrors(ctx context.Context, url string, ch *Ch) {
 
 	res, err := ctxhttp.Head(ctx, http.DefaultClient, url)
-	if res != nil {
-		res.Body.Close()
-	}
 	if err != nil {
 		ch.Err <- errors.Wrap(err, "failed to head request: "+url)
 		return
@@ -115,20 +113,17 @@ func (p *Pget) Download() error {
 		return err
 	}
 
-	ctx, cancelAll := context.WithCancel(context.Background())
-
-	ch := MakeCh()
-	defer ch.Close()
-
-	totalActiveProcs := 1 // 1 is progressbar
+	grp, ctx := errgroup.WithContext(context.Background())
 
 	// on an assignment for request
-	p.Assignment(ctx, &totalActiveProcs, procs, split, ch)
+	p.Assignment(grp, procs, split)
 
-	go p.Utils.ProgressBar(ctx, ch)
+	if err := p.Utils.ProgressBar(ctx); err != nil {
+		return err
+	}
 
-	// listen for error or done channel
-	if err := ch.DownloadListen(ctx, cancelAll, totalActiveProcs); err != nil {
+	// wait for Assignment method
+	if err := grp.Wait(); err != nil {
 		return err
 	}
 
@@ -136,13 +131,14 @@ func (p *Pget) Download() error {
 }
 
 // Assignment method that to each goroutine gives the task
-func (p Pget) Assignment(ctx context.Context, totalActiveProcs *int, procs, split uint, ch *Ch) {
+func (p Pget) Assignment(grp *errgroup.Group, procs, split uint) {
 	filename := p.FileName()
 	dirname := p.DirName()
 
 	assignment := uint(p.Procs / len(p.TargetURLs))
 
 	var lasturl string
+	totalActiveProcs := uint(0)
 	for i := uint(0); i < procs; i++ {
 		partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, procs, i)
 
@@ -165,12 +161,12 @@ func (p Pget) Assignment(ctx context.Context, totalActiveProcs *int, procs, spli
 			r.low += infosize
 		}
 
-		*totalActiveProcs++
+		totalActiveProcs++
 
 		url := p.TargetURLs[0]
 
 		// give efficiency and equality work
-		if uint(*totalActiveProcs-1)%assignment == 0 {
+		if totalActiveProcs%assignment == 0 {
 			// Like shift method
 			if len(p.TargetURLs) > 1 {
 				p.TargetURLs = p.TargetURLs[1:]
@@ -184,20 +180,16 @@ func (p Pget) Assignment(ctx context.Context, totalActiveProcs *int, procs, spli
 		}
 
 		// execute get request
-		go func(r Range, url string) {
-			if err := p.Requests(ctx, r, filename, dirname, url); err != nil {
-				ch.Err <- err
-			} else {
-				ch.Done <- true
-			}
-		}(r, url)
+		grp.Go(func() error {
+			return p.Requests(r, filename, dirname, url)
+		})
 	}
 }
 
 // Requests method will download the file
-func (p Pget) Requests(ctx context.Context, r Range, filename, dirname, url string) error {
+func (p Pget) Requests(r Range, filename, dirname, url string) error {
 
-	res, err := p.MakeResponse(ctx, r.low, r.high, r.worker, url) // ctxhttp
+	res, err := p.MakeResponse(r.low, r.high, r.worker, url) // ctxhttp
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to split get requests: %d", r.worker))
 	}
@@ -218,7 +210,7 @@ func (p Pget) Requests(ctx context.Context, r Range, filename, dirname, url stri
 }
 
 // MakeResponse return *http.Response include context and range header
-func (p *Pget) MakeResponse(ctx context.Context, low, high, worker uint, url string) (*http.Response, error) {
+func (p *Pget) MakeResponse(low, high, worker uint, url string) (*http.Response, error) {
 	// create get request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -233,5 +225,5 @@ func (p *Pget) MakeResponse(ctx context.Context, low, high, worker uint, url str
 		req.Header.Set("User-Agent", p.useragent)
 	}
 
-	return ctxhttp.Do(ctx, http.DefaultClient, req)
+	return http.DefaultClient.Do(req)
 }

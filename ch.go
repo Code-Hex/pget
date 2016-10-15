@@ -56,22 +56,3 @@ func (ch *Ch) CheckingListen(ctx context.Context, cancelAll context.CancelFunc, 
 
 	return
 }
-
-// DownloadListen method wait all channels for Download method in requests
-func (ch *Ch) DownloadListen(ctx context.Context, cancelAll context.CancelFunc, totalActiveProcs int) (e error) {
-
-	for i := 0; i < totalActiveProcs; i++ {
-		select {
-		case <-ctx.Done():
-			i--
-		case err := <-ch.Err:
-			if e != nil {
-				cancelAll()
-			}
-			e = err
-		case <-ch.Done:
-		}
-	}
-
-	return
-}
