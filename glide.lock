@@ -1,36 +1,40 @@
 hash: c0550ab4097b6f78b12920db968a7a6e1aaf8a754e45e90be0ebaf6553c0d3b0
-updated: 2016-08-05T12:17:43.497968374+09:00
+updated: 2016-10-16T00:35:02.01892755+09:00
 imports:
 - name: github.com/antonholmquist/jason
-  version: 423803175a265e07c3f35cd8faf009eac345efb8
+  version: 962e09b85496e2e158eec1567fb4c826ce3d55d1
 - name: github.com/asaskevich/govalidator
-  version: 593d64559f7600f29581a3ee42177f5dbded27a9
+  version: 7b3beb6df3c42abd3509abfc3bcacc0fbfb7c877
 - name: github.com/Code-Hex/pget
-  version: b35d5a6ab91837012798a66aefb2642b4cda9371
+  version: a2a0a7c8736dafa9c7ddc8ca412146af1a7365eb
 - name: github.com/Code-Hex/updater
   version: c3f2786725200723369a8f97b8b24bb19fe3baf4
 - name: github.com/jessevdk/go-flags
-  version: f2785f5820ec967043de79c8be97edfc464ca745
+  version: 4cc2832a6e6d1d3b815e2b9d544b2a4dfb3ce8fa
 - name: github.com/mcuadros/go-version
   version: d52711f8d6bea8dc01efafdb68ad95a4e2606630
 - name: github.com/mitchellh/go-homedir
   version: 756f7b183b7ab78acdbbee5c7f392838ed459dda
 - name: github.com/pkg/errors
-  version: 2a9be18ecd8c148be18be08a811e33809206da19
+  version: 839d9e913e063e28dfd0e6c7b7512793e0a48be9
 - name: github.com/ricochet2200/go-disk-usage
   version: f0d1b743428fc09792f93233d9412f89f88fa2ab
   subpackages:
   - du
 - name: golang.org/x/net
-  version: 7c62cfdcccc65f87b0120ec841012ba816fc1aec
+  version: 8b4af36cd21a1f85a7484b49feb7c79363106d8e
   subpackages:
   - context
   - context/ctxhttp
+- name: golang.org/x/sync
+  version: 1ae7c7b29e06598039be46c5083819ba6fd7a97e
+  subpackages:
+  - errgroup
 - name: gopkg.in/cheggaaa/pb.v1
   version: 9453b2db37f4d8bc63751daca63bbe7049eb5e74
 testImports:
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
 - name: github.com/dsnet/compress
@@ -41,7 +45,7 @@ testImports:
   - internal
   - internal/prefix
 - name: github.com/mholt/archiver
-  version: a075791974ee7d363104fde72b5e009515cc0def
+  version: 4a8a092653655d29c8e091cf2ecf91cbe697f0de
 - name: github.com/nwaples/rardecode
   version: f94841372ddc36be531a5c3e1206238e32e93d74
 - name: github.com/pmezard/go-difflib
@@ -49,6 +53,6 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: d77da356e56a7428ad25149ca77381849a6a5232
+  version: 976c720a22c8eb4eb6a0b4348ad85ad12491a506
   subpackages:
   - assert
