@@ -1,6 +1,7 @@
 package pget
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,7 +9,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -46,7 +46,11 @@ func (p *Pget) Checking() error {
 		return err
 	}
 
-	filename := p.Utils.URLFileName(p.TargetDir, p.TargetURLs[0])
+	// did already get filename from -o option
+	filename := p.Utils.FileName()
+	if filename == "" {
+		filename = p.Utils.URLFileName(p.TargetDir, p.TargetURLs[0])
+	}
 	p.SetFileName(filename)
 	p.SetFullFileName(p.TargetDir, filename)
 	p.Utils.SetDirName(p.TargetDir, filename, p.Procs)
@@ -119,7 +123,7 @@ func (p *Pget) Download() error {
 	totalActiveProcs := 1 // 1 is progressbar
 
 	// on an assignment for request
-	p.Assignment(&totalActiveProcs, ctx, procs, split, ch)
+	p.Assignment(ctx, &totalActiveProcs, procs, split, ch)
 
 	go p.Utils.ProgressBar(ctx, ch)
 
@@ -132,7 +136,7 @@ func (p *Pget) Download() error {
 }
 
 // Assignment method that to each goroutine gives the task
-func (p Pget) Assignment(totalActiveProcs *int, ctx context.Context, procs, split uint, ch *Ch) {
+func (p Pget) Assignment(ctx context.Context, totalActiveProcs *int, procs, split uint, ch *Ch) {
 	filename := p.FileName()
 	dirname := p.DirName()
 

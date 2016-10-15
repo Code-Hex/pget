@@ -1,6 +1,7 @@
 package pget
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/ricochet2200/go-disk-usage/du"
-	"golang.org/x/net/context"
 	"gopkg.in/cheggaaa/pb.v1"
 )
 
@@ -79,11 +79,7 @@ func (d *Data) SetFullFileName(directory, filename string) {
 	if directory == "" {
 		d.fullfilename = fmt.Sprintf("%s", filename)
 	} else {
-		if isDos() {
-			d.fullfilename = fmt.Sprintf("%s\\%s", directory, filename)
-		} else {
-			d.fullfilename = fmt.Sprintf("%s/%s", directory, filename)
-		}
+		d.fullfilename = fmt.Sprintf("%s/%s", directory, filename)
 	}
 }
 
@@ -110,12 +106,7 @@ func (d *Data) URLFileName(targetDir, url string) string {
 		if targetDir == "" {
 			filePath = filename
 		} else {
-			if isDos() {
-				filePath = fmt.Sprintf("%s\\%s", targetDir, filename)
-			} else {
-				filePath = fmt.Sprintf("%s/%s", targetDir, filename)
-			}
-
+			filePath = fmt.Sprintf("%s/%s", targetDir, filename)
 		}
 
 		if _, err := os.Stat(filePath); err == nil {
@@ -133,11 +124,7 @@ func (d *Data) SetDirName(path, filename string, procs int) {
 	if path == "" {
 		d.dirname = fmt.Sprintf("_%s.%d", filename, procs)
 	} else {
-		if isDos() {
-			d.dirname = fmt.Sprintf("%s\\_%s.%d", path, filename, procs)
-		} else {
-			d.dirname = fmt.Sprintf("%s/_%s.%d", path, filename, procs)
-		}
+		d.dirname = fmt.Sprintf("%s/_%s.%d", path, filename, procs)
 	}
 
 }
@@ -249,11 +236,7 @@ func (d *Data) BindwithFiles(procs int) error {
 
 	var f string
 	for i := 0; i < procs; i++ {
-		if isDos() {
-			f = fmt.Sprintf("%s\\%s.%d.%d", dirname, filename, procs, i)
-		} else {
-			f = fmt.Sprintf("%s/%s.%d.%d", dirname, filename, procs, i)
-		}
+		f = fmt.Sprintf("%s/%s.%d.%d", dirname, filename, procs, i)
 		subfp, err := os.Open(f)
 		if err != nil {
 			return errors.Wrap(err, "failed to open "+f+" in download location")

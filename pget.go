@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	version = "0.0.5"
+	version = "0.0.6"
 	msg     = "Pget v" + version + ", parallel file download client\n"
 )
 
@@ -109,6 +109,10 @@ func (pget *Pget) Ready() error {
 
 	if err := pget.parseURLs(); err != nil {
 		return errors.Wrap(err, "failed to parse of url")
+	}
+
+	if opts.Output != "" {
+		pget.Utils.SetFileName(opts.Output)
 	}
 
 	if opts.UserAgent != "" {

@@ -1,9 +1,8 @@
 package pget
 
 import (
+	"context"
 	"errors"
-
-	"golang.org/x/net/context"
 )
 
 // Ch struct for request
