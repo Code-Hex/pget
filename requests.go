@@ -189,19 +189,18 @@ func (p Pget) Assignment(grp *errgroup.Group, procs, split uint) {
 // Requests method will download the file
 func (p Pget) Requests(r Range, filename, dirname, url string) error {
 
-	res, err := p.MakeResponse(r.low, r.high, r.worker, url) // ctxhttp
+	res, err := p.MakeResponse(r, url) // ctxhttp
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to split get requests: %d", r.worker))
 	}
-
 	defer res.Body.Close()
 
 	partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, p.Procs, r.worker)
+
 	output, err := os.OpenFile(partName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to create %s in %s", filename, dirname))
 	}
-
 	defer output.Close()
 
 	io.Copy(output, res.Body)
@@ -210,19 +209,24 @@ func (p Pget) Requests(r Range, filename, dirname, url string) error {
 }
 
 // MakeResponse return *http.Response include context and range header
-func (p *Pget) MakeResponse(low, high, worker uint, url string) (*http.Response, error) {
+func (p Pget) MakeResponse(r Range, url string) (*http.Response, error) {
 	// create get request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("failed to split NewRequest for get: %d", worker))
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to split NewRequest for get: %d", r.worker))
 	}
 
 	// set download ranges
-	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", low, high))
+	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", r.low, r.high))
 
-	// set user agent
+	// set useragent
 	if p.useragent != "" {
 		req.Header.Set("User-Agent", p.useragent)
+	}
+
+	// set referer
+	if p.referer != "" {
+		req.Header.Set("Referer", p.referer)
 	}
 
 	return http.DefaultClient.Do(req)

@@ -12,15 +12,16 @@ import (
 
 // Options struct for parse command line arguments
 type Options struct {
-	Help      bool   `short:"h" long:"help" description:"print usage and exit"`
-	Version   bool   `short:"v" long:"version" description:"display the version of pget and exit"`
-	Procs     int    `short:"p" long:"procs" description:"split ratio to download file"`
-	TargetDir string `short:"d" long:"target-dir" description:"path to directory to store the downloaded file"`
-	Timeout   int    `short:"t" long:"timeout" description:"timeout of checking request in seconds"`
-	UserAgent string `short:"u" long:"user-agent" description:"identify as AGENT"`
-	Output    string `short:"o" long:"output" description:"output file to FILENAME"`
-	Update    bool   `long:"check-update" description:"check if there is update available"`
-	Trace     bool   `long:"trace" description:"display detail error messages"`
+	Help      bool   `short:"h" long:"help"`
+	Version   bool   `short:"v" long:"version"`
+	Procs     int    `short:"p" long:"procs"`
+	Output    string `short:"o" long:"output"`
+	TargetDir string `short:"d" long:"target-dir"`
+	Timeout   int    `short:"t" long:"timeout"`
+	UserAgent string `short:"u" long:"user-agent"`
+	Referer   string `short:"r" long:"referer"`
+	Update    bool   `long:"check-update"`
+	Trace     bool   `long:"trace"`
 }
 
 func (opts *Options) parse(argv []string) ([]string, error) {
@@ -44,10 +45,11 @@ func (opts Options) usage() []byte {
   -h,  --help                   print usage and exit
   -v,  --version                display the version of pget and exit
   -p,  --procs <num>            split ratio to download file
+  -o,  --output <filename>      output file to FILENAME
   -d,  --target-dir <PATH>    	path to the directory to save the downloaded file, filename will be taken from url
   -t,  --timeout <seconds>      timeout of checking request in seconds
   -u,  --user-agent <AGENT>     identify as AGENT
-  -o,  --output <filename>      output file to FILENAME
+  -r,  --referer <REFERER>      identify as REFERER
   --check-update                check if there is update available
   --trace                       display detail error messages
 `)

@@ -27,6 +27,7 @@ type Pget struct {
 	args       []string
 	timeout    int
 	useragent  string
+	referer    string
 }
 
 type ignore struct {
@@ -119,6 +120,10 @@ func (pget *Pget) Ready() error {
 		pget.useragent = opts.UserAgent
 	}
 
+	if opts.Referer != "" {
+		pget.referer = opts.Referer
+	}
+
 	if opts.TargetDir != "" {
 		info, err := os.Stat(opts.TargetDir)
 		if err != nil {
@@ -133,8 +138,8 @@ func (pget *Pget) Ready() error {
 		} else if !info.IsDir() {
 			return errors.New("target dir is not a valid directory")
 		}
+		opts.TargetDir = strings.TrimSuffix(opts.TargetDir, "/")
 	}
-	opts.TargetDir = strings.TrimSuffix(opts.TargetDir, "/")
 	pget.TargetDir = opts.TargetDir
 
 	return nil
