@@ -48,7 +48,7 @@ func TestRun(t *testing.T) {
 		t.Errorf("failed to copy: %s", err)
 	}
 
-	if err := archiver.UntarGz("resume.tar.gz", "."); err != nil {
+	if err := archiver.TarGz.Open("resume.tar.gz", "."); err != nil {
 		t.Errorf("failed to untargz: %s", err)
 	}
 
