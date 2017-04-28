@@ -85,12 +85,11 @@ func (p *Pget) CheckMirrors(ctx context.Context, url string, ch *Ch) {
 	}
 
 	// get of ContentLength
-	size := uint(res.ContentLength)
-	if size <= 0 {
+	if res.ContentLength <= 0 {
 		ch.Err <- errors.New("invalid content length")
-	} else {
-		ch.Size <- size
+		return
 	}
+	ch.Size <- uint(res.ContentLength)
 }
 
 // Download method distributes the task to each goroutine for each URL
