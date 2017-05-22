@@ -1,13 +1,16 @@
 package pget
 
-import "github.com/pkg/errors"
-
 type causer interface {
 	Cause() error
 }
 
 type exit interface {
 	ExitCode() int
+}
+
+type baseError struct {
+	err  error
+	code int
 }
 
 // UnwrapErrors get important message from wrapped error message
@@ -34,18 +37,21 @@ func makeIgnoreErr() ignoreError  { return ignoreError{} }
 func (ignoreError) Error() string { return "" }
 
 // Error for arguments
-type argumentsError struct {
-	err  error
-	code int
+type argumentsError struct{ baseError }
+
+func makeArgumentsError(err error) argumentsError {
+	return argumentsError{baseError{err: err, code: 65}}
 }
 
-func makeArgumentsError(err error, message string) argumentsError {
-	return argumentsError{
-		err:  errors.Wrap(err, message),
-		code: 65,
-	}
-}
-
-func (a argumentsError) Cause() error  { return a.err }
 func (a argumentsError) Error() string { return a.err.Error() }
 func (a argumentsError) ExitCode() int { return a.code }
+
+// Error for resources
+type resourceError struct{ baseError }
+
+func makeResourceError(err error) resourceError {
+	return resourceError{baseError{err: err, code: 72}}
+}
+
+func (r resourceError) Error() string { return r.err.Error() }
+func (r resourceError) ExitCode() int { return r.code }

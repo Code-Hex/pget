@@ -69,13 +69,13 @@ func (p *pget) prepare() error {
 		info, err := os.Stat(dir)
 		if err != nil {
 			if !os.IsNotExist(err) {
-				return errors.Wrap(err, "Invalid directory")
+				return makeResourceError(errors.Wrap(err, "Invalid directory"))
 			}
 			if err := os.MkdirAll(dir, os.ModeDir); err != nil {
-				return errors.Wrapf(err, `Failed to create diretory "%s"`, dir)
+				return makeResourceError(errors.Wrapf(err, `Failed to create diretory "%s"`, dir))
 			}
 		} else if !info.IsDir() {
-			return errors.New("Invalid directory")
+			return makeResourceError(errors.New("Invalid directory"))
 		}
 		p.Options.TargetDir = strings.TrimSuffix(dir, "/")
 	}
@@ -108,10 +108,10 @@ func parseURLs(urls []string) ([]string, error) {
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			return nil, errors.Wrap(err, "Failed to parse url from stdin")
+			return nil, makeResourceError(errors.Wrap(err, "Failed to parse url from stdin"))
 		}
 		if len(URLs) < 1 {
-			return nil, errors.New("Download URL is must needed")
+			return nil, makeArgumentsError(errors.New("Download URL is must needed"))
 		}
 	}
 
@@ -126,7 +126,7 @@ func parseOptions(opts *Options, argv []string) ([]string, error) {
 
 	o, err := opts.parse(argv)
 	if err != nil {
-		return nil, makeArgumentsError(err, "failed to parse command line options")
+		return nil, makeArgumentsError(errors.Wrap(err, "Failed to parse command line options"))
 	}
 	if opts.Help {
 		os.Stdout.Write(opts.usage())
@@ -139,7 +139,7 @@ func parseOptions(opts *Options, argv []string) ([]string, error) {
 	if opts.Update {
 		result, err := opts.isupdate()
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse command line options")
+			return nil, makeArgumentsError(errors.Wrap(err, "Failed to parse command line options"))
 		}
 		os.Stdout.Write(result)
 		return nil, makeIgnoreErr()
