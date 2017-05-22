@@ -23,6 +23,31 @@ func New() *pget {
 	}
 }
 
+func (p *pget) Run() int {
+	if e := p.run(); e != nil {
+		exitCode, err := UnwrapErrors(e)
+		// for ignoreError
+		if err == nil {
+			return exitCode
+		}
+
+		if p.StackTrace {
+			fmt.Fprintf(os.Stderr, "Error:\n  %+v\n", e)
+		} else {
+			fmt.Fprintf(os.Stderr, "Error:\n  %v\n", err)
+		}
+		return exitCode
+	}
+	return 0
+}
+
+func (p *pget) run() error {
+	if err := p.prepare(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (p *pget) prepare() error {
 	if procs := os.Getenv("GOMAXPROCS"); procs == "" {
 		runtime.GOMAXPROCS(p.GoRoutines)
@@ -38,6 +63,7 @@ func (p *pget) prepare() error {
 		return errors.Wrap(err, "Failed to parse url from arguments or stdin")
 	}
 	p.URLs = urls
+
 	if p.Options.TargetDir != "" {
 		dir := p.Options.TargetDir
 		info, err := os.Stat(dir)
@@ -46,10 +72,10 @@ func (p *pget) prepare() error {
 				return errors.Wrap(err, "Invalid directory")
 			}
 			if err := os.MkdirAll(dir, os.ModeDir); err != nil {
-				return errors.Wrapf(err, "Failed to create diretory at %s", dir)
+				return errors.Wrapf(err, `Failed to create diretory "%s"`, dir)
 			}
 		} else if !info.IsDir() {
-			return errors.New("target dir is not a valid directory")
+			return errors.New("Invalid directory")
 		}
 		p.Options.TargetDir = strings.TrimSuffix(dir, "/")
 	}
@@ -81,7 +107,6 @@ func parseURLs(urls []string) ([]string, error) {
 				}
 			}
 		}
-
 		if err := scanner.Err(); err != nil {
 			return nil, errors.Wrap(err, "Failed to parse url from stdin")
 		}
@@ -101,25 +126,21 @@ func parseOptions(opts *Options, argv []string) ([]string, error) {
 
 	o, err := opts.parse(argv)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse command line options")
+		return nil, makeArgumentsError(err, "failed to parse command line options")
 	}
-
 	if opts.Help {
 		os.Stdout.Write(opts.usage())
 		return nil, makeIgnoreErr()
 	}
-
 	if opts.Version {
 		os.Stdout.Write([]byte(msg))
 		return nil, makeIgnoreErr()
 	}
-
 	if opts.Update {
 		result, err := opts.isupdate()
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse command line options")
 		}
-
 		os.Stdout.Write(result)
 		return nil, makeIgnoreErr()
 	}

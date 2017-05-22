@@ -2,40 +2,50 @@ package pget
 
 import "github.com/pkg/errors"
 
-type ignore struct {
-	err error
-}
-
-type cause interface {
+type causer interface {
 	Cause() error
 }
 
-// UnwrapError get important message from wrapped error message
-func UnwrapError(err error) error {
-	for e := err; e != nil; {
-		switch e.(type) {
-		case ignore:
-			return nil
-		case cause:
-			e = e.(cause).Cause()
-		default:
-			return e
-		}
-	}
-	return nil
+type exit interface {
+	ExitCode() int
 }
 
-func makeIgnoreErr() ignore {
-	return ignore{
-		err: errors.New("this is ignore message"),
+// UnwrapErrors get important message from wrapped error message
+func UnwrapErrors(err error) (int, error) {
+	for e := err; e != nil; {
+		switch e.(type) {
+		case exit:
+			return e.(exit).ExitCode(), e
+		case ignoreError:
+			return 0, nil
+		case causer:
+			e = e.(causer).Cause()
+		default:
+			return 1, e // default error
+		}
 	}
+	return 0, nil
 }
 
 // Error for options: version, usage
-func (i ignore) Error() string {
-	return i.err.Error()
+type ignoreError struct{}
+
+func makeIgnoreErr() ignoreError  { return ignoreError{} }
+func (ignoreError) Error() string { return "" }
+
+// Error for arguments
+type argumentsError struct {
+	err  error
+	code int
 }
 
-func (i ignore) Cause() error {
-	return i.err
+func makeArgumentsError(err error, message string) argumentsError {
+	return argumentsError{
+		err:  errors.Wrap(err, message),
+		code: 65,
+	}
 }
+
+func (a argumentsError) Cause() error  { return a.err }
+func (a argumentsError) Error() string { return a.err.Error() }
+func (a argumentsError) ExitCode() int { return a.code }

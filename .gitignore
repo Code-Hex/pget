@@ -1,0 +1,6 @@
+*
+!*.*
+!*/
+!.gitignore
+!.travis.yml
+vendor

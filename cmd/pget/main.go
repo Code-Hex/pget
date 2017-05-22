@@ -1,7 +1,8 @@
 package main
 
 import "github.com/Code-Hex/pget"
+import "os"
 
 func main() {
-	cli := pget.New()
+	os.Exit(pget.New().Run())
 }
