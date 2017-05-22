@@ -1,9 +1,0 @@
-language: go
-sudo: false
-go:
-  - tip
-script:
-  - make lint
-  - make test
-after_script:
-  - make cover

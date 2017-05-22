@@ -10,24 +10,28 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	version = "1.0.0"
+	msg     = "Pget v" + version + ", The fastest file download client\n"
+)
+
 // Options struct for parse command line arguments
 type Options struct {
-	Help      bool   `short:"h" long:"help"`
-	Version   bool   `short:"v" long:"version"`
-	Procs     int    `short:"p" long:"procs"`
-	Output    string `short:"o" long:"output"`
-	TargetDir string `short:"d" long:"target-dir"`
-	Timeout   int    `short:"t" long:"timeout"`
-	UserAgent string `short:"u" long:"user-agent"`
-	Referer   string `short:"r" long:"referer"`
-	Update    bool   `long:"check-update"`
-	Trace     bool   `long:"trace"`
+	Help       bool   `short:"h" long:"help"`
+	Version    bool   `short:"v" long:"version"`
+	Procs      int    `short:"p" long:"procs"`
+	Output     string `short:"o" long:"output"`
+	TargetDir  string `short:"d" long:"target-dir"`
+	Timeout    int    `short:"t" long:"timeout"`
+	UserAgent  string `short:"u" long:"user-agent"`
+	Referer    string `short:"r" long:"referer"`
+	Update     bool   `long:"check-update"`
+	StackTrace bool   `long:"trace"`
 }
 
 func (opts *Options) parse(argv []string) ([]string, error) {
 	p := flags.NewParser(opts, flags.PrintErrors)
 	args, err := p.ParseArgs(argv)
-
 	if err != nil {
 		os.Stderr.Write(opts.usage())
 		return nil, errors.Wrap(err, "invalid command line options")
