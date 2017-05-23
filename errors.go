@@ -1,5 +1,21 @@
 package pget
 
+// http://kaworu.jpn.org/doc/FreeBSD/jman/man3/sysexits.3.php
+const (
+	ExOK          = 0
+	ExUSAGE       = 64
+	ExDATAERR     = 65
+	ExNOINPUT     = 66
+	ExNOHOST      = 68
+	ExUNAVAILABLE = 69
+	ExSOFTWARE    = 70
+	ExOSFILE      = 72
+	ExCANTCREAT   = 73
+	ExIOERR       = 74
+	ExTEMPFAIL    = 75
+	ExPROTOCOL    = 76
+)
+
 type causer interface {
 	Cause() error
 }
@@ -40,7 +56,7 @@ func (ignoreError) Error() string { return "" }
 type argumentsError struct{ baseError }
 
 func makeArgumentsError(err error) argumentsError {
-	return argumentsError{baseError{err: err, code: 65}}
+	return argumentsError{baseError{err: err, code: ExDATAERR}}
 }
 
 func (a argumentsError) Error() string { return a.err.Error() }
@@ -50,8 +66,17 @@ func (a argumentsError) ExitCode() int { return a.code }
 type resourceError struct{ baseError }
 
 func makeResourceError(err error) resourceError {
-	return resourceError{baseError{err: err, code: 72}}
+	return resourceError{baseError{err: err, code: ExOSFILE}}
 }
 
 func (r resourceError) Error() string { return r.err.Error() }
 func (r resourceError) ExitCode() int { return r.code }
+
+type tempError struct{ baseError }
+
+func makeTempError(err error) tempError {
+	return tempError{baseError{err: err, code: ExTEMPFAIL}}
+}
+
+func (r tempError) Error() string { return r.err.Error() }
+func (r tempError) ExitCode() int { return r.code }

@@ -36,7 +36,6 @@ func (opts *Options) parse(argv []string) ([]string, error) {
 		os.Stderr.Write(opts.usage())
 		return nil, errors.Wrap(err, "invalid command line options")
 	}
-
 	return args, nil
 }
 
