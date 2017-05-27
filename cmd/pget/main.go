@@ -1,6 +1,9 @@
 package main
 
-import "github.com/Code-Hex/pget"
-import "os"
+import (
+	"os"
+
+	"github.com/Code-Hex/pget"
+)
 
 func main() { os.Exit(pget.New().Run()) }
