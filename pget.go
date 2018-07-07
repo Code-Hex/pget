@@ -1,235 +1,249 @@
 package pget
 
 import (
-	"bufio"
+	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"path"
 	"runtime"
-	"strings"
 
-	"github.com/asaskevich/govalidator"
+	"golang.org/x/sync/errgroup"
+	pb "gopkg.in/cheggaaa/pb.v1"
+
+	"github.com/Code-Hex/pget/internal/utils"
 	"github.com/pkg/errors"
 )
 
-const (
-	version = "0.0.6"
+var (
+	version string
 	msg     = "Pget v" + version + ", parallel file download client\n"
 )
 
-// Pget structs
-type Pget struct {
-	Trace bool
-	Utils
-	TargetDir  string
-	Procs      int
+type Object struct {
+	*Options
+	Args       []string
 	URLs       []string
 	TargetURLs []string
-	args       []string
-	timeout    int
-	useragent  string
-	referer    string
+
+	*info
+	*chans
+
+	client     *http.Client
+	grp        errgroup.Group
+	goProgress chan struct{}
 }
 
-type ignore struct {
-	err error
+type info struct {
+	filename   string
+	filesize   uint
+	tmpDirName string
 }
 
-type cause interface {
-	Cause() error
+type chans struct {
+	size    chan uint
+	setSize chan struct{}
 }
 
-// New for pget package
-func New() *Pget {
-	return &Pget{
-		Trace:   false,
-		Utils:   &Data{},
-		Procs:   runtime.NumCPU(), // default
-		timeout: 10,
+func New() *Object {
+	return &Object{
+		Options: new(Options),
+		client:  httpClient(),
+		info:    new(info),
+		chans: &chans{
+			size:    make(chan uint),
+			setSize: make(chan struct{}),
+		},
 	}
 }
 
-// ErrTop get important message from wrapped error message
-func (pget Pget) ErrTop(err error) error {
-	for e := err; e != nil; {
-		switch e.(type) {
-		case ignore:
-			return nil
-		case cause:
-			e = e.(cause).Cause()
-		default:
-			return e
+func (o *Object) Run() int {
+	if err := o.run(); err != nil {
+		if o.Trace {
+			fmt.Fprintf(os.Stderr, "Error:\n%+v\n", err)
+		} else {
+			fmt.Fprintf(os.Stderr, "Error:\n  %v\n", o.getRootErr(err))
 		}
+		return 1
 	}
-
-	return nil
+	return 0
 }
 
-// Run execute methods in pget package
-func (pget *Pget) Run() error {
-	if err := pget.Ready(); err != nil {
-		return pget.ErrTop(err)
+func (o *Object) run() error {
+	if err := o.prepare(); err != nil {
+		return errors.Wrap(err, "failed to prepare pget")
 	}
-
-	if err := pget.Checking(); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	go o.checkSizeDifference(cancel)
+	if err := o.check(ctx); err != nil {
 		return errors.Wrap(err, "failed to check header")
 	}
-
-	if err := pget.Download(); err != nil {
+	if err := o.download(ctx); err != nil {
 		return err
 	}
-
-	if err := pget.Utils.BindwithFiles(pget.Procs); err != nil {
+	if err := o.bindwithFiles(); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-// Ready method define the variables required to Download.
-func (pget *Pget) Ready() error {
-	if procs := os.Getenv("GOMAXPROCS"); procs == "" {
-		runtime.GOMAXPROCS(pget.Procs)
-	}
-
-	var opts Options
-	if err := pget.parseOptions(&opts, os.Args[1:]); err != nil {
+// prepare method defines the variables required to Download.
+func (o *Object) prepare() error {
+	if err := o.parseOptions(os.Args[1:]); err != nil {
 		return errors.Wrap(err, "failed to parse command line args")
 	}
-
-	if opts.Trace {
-		pget.Trace = opts.Trace
+	if procs := os.Getenv("GOMAXPROCS"); procs == "" {
+		runtime.GOMAXPROCS(o.Procs)
 	}
-
-	if opts.Procs > 2 {
-		pget.Procs = opts.Procs
-	}
-
-	if opts.Timeout > 0 {
-		pget.timeout = opts.Timeout
-	}
-
-	if err := pget.parseURLs(); err != nil {
-		return errors.Wrap(err, "failed to parse of url")
-	}
-
-	if opts.Output != "" {
-		pget.Utils.SetFileName(opts.Output)
-	}
-
-	if opts.UserAgent != "" {
-		pget.useragent = opts.UserAgent
-	}
-
-	if opts.Referer != "" {
-		pget.referer = opts.Referer
-	}
-
-	if opts.TargetDir != "" {
-		info, err := os.Stat(opts.TargetDir)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				return errors.Wrap(err, "target dir is invalid")
-			}
-
-			if err := os.MkdirAll(opts.TargetDir, 0755); err != nil {
-				return errors.Wrapf(err, "failed to create diretory at %s", opts.TargetDir)
-			}
-
-		} else if !info.IsDir() {
-			return errors.New("target dir is not a valid directory")
-		}
-		opts.TargetDir = strings.TrimSuffix(opts.TargetDir, "/")
-	}
-	pget.TargetDir = opts.TargetDir
-
 	return nil
 }
 
-func (pget Pget) makeIgnoreErr() ignore {
-	return ignore{
-		err: errors.New("this is ignore message"),
+// check method checks it can request
+func (o *Object) check(ctx context.Context) error {
+	tctx, cancel := context.WithTimeout(ctx, o.Timeout)
+	defer cancel()
+	eg, ectx := errgroup.WithContext(tctx)
+	for _, url := range o.URLs {
+		fmt.Printf("Checking now %s\n", url)
+		eg.Go(o.checkIsCorrectMirrors(ectx, url))
 	}
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "failed to check mirrors")
+	}
+	return o.setup()
 }
 
-// Error for options: version, usage
-func (i ignore) Error() string {
-	return i.err.Error()
-}
-
-func (i ignore) Cause() error {
-	return i.err
-}
-
-func (pget *Pget) parseOptions(opts *Options, argv []string) error {
-
-	if len(argv) == 0 {
-		os.Stdout.Write(opts.usage())
-		return pget.makeIgnoreErr()
+func (o *Object) setup() error {
+	o.setFileSize()
+	// did already get filename from -o option
+	if o.filename == "" {
+		o.filename = path.Base(o.URLs[0])
 	}
+	o.tmpDirName = fmt.Sprintf("_%s.%d", o.filename, o.Procs)
 
-	o, err := opts.parse(argv)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse command line options")
+	if err := utils.IsFree(o.filesize, uint(o.Procs)); err != nil {
+		return errors.Wrap(err, "failed to check is disk free")
 	}
-
-	if opts.Help {
-		os.Stdout.Write(opts.usage())
-		return pget.makeIgnoreErr()
+	// create download location
+	if err := os.MkdirAll(o.tmpDirName, 0755); err != nil {
+		return errors.Wrap(err, "failed to mkdir for download location")
 	}
-
-	if opts.Version {
-		os.Stdout.Write([]byte(msg))
-		return pget.makeIgnoreErr()
-	}
-
-	if opts.Update {
-		result, err := opts.isupdate()
-		if err != nil {
-			return errors.Wrap(err, "failed to parse command line options")
-		}
-
-		os.Stdout.Write(result)
-		return pget.makeIgnoreErr()
-	}
-
-	pget.args = o
-
 	return nil
 }
 
-func (pget *Pget) parseURLs() error {
+func (o *Object) download(ctx context.Context) error {
+	eg, ectx := errgroup.WithContext(ctx)
+	// on an assignment for request
+	o.assignment(ectx, eg)
+	eg.Go(o.progressBar(ctx))
+	return eg.Wait()
+}
 
-	// find url in args
-	for _, argv := range pget.args {
-		if govalidator.IsURL(argv) {
-			pget.URLs = append(pget.URLs, argv)
-		}
-	}
+// assignment method that to each goroutine gives the task
+func (o *Object) assignment(ctx context.Context, eg *errgroup.Group) {
+	filename := o.filename
+	dirname := o.tmpDirName
 
-	if len(pget.URLs) < 1 {
-		fmt.Fprintf(os.Stdout, "Please input url separate with space or newline\n")
-		fmt.Fprintf(os.Stdout, "Start download at ^D\n")
+	procs := uint(o.Procs)
+	split := o.filesize / procs
+	assignment := procs / uint(len(o.URLs))
 
-		// scanning url from stdin
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			scan := scanner.Text()
-			urls := strings.Split(scan, " ")
-			for _, url := range urls {
-				if govalidator.IsURL(url) {
-					pget.URLs = append(pget.URLs, url)
+	var lasturl string
+	totalActiveProcs := uint(0)
+	for i := uint(0); i < procs; i++ {
+		partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, procs, i)
+
+		// make range
+		r := o.makeRanges(i, split)
+		if info, err := os.Stat(partName); err == nil {
+			infosize := uint(info.Size())
+			// check if the part is fully downloaded
+			if isLastProc(i, procs) {
+				if infosize == r.filesize() {
+					continue
 				}
+			} else if infosize == split {
+				// skip as the part is already downloaded
+				continue
+			}
+			// make low range from this next byte
+			r.low += infosize
+		}
+
+		totalActiveProcs++
+
+		url := o.TargetURLs[0]
+
+		// give efficiency and equality work
+		if totalActiveProcs%assignment == 0 {
+			// Like shift method
+			if len(o.TargetURLs) > 1 {
+				o.TargetURLs = o.TargetURLs[1:]
+			}
+
+			// check whether to output the message
+			if lasturl != url {
+				fmt.Printf("Download start from %s\n", url)
+				lasturl = url
 			}
 		}
 
-		if err := scanner.Err(); err != nil {
-			return errors.Wrap(err, "failed to parse url from stdin")
+		// execute get request
+		eg.Go(o.Requests(ctx, r, url))
+	}
+}
+
+func isLastProc(i, procs uint) bool {
+	return i == procs-1
+}
+
+// bindwithFiles function for file binding after split download
+func (o *Object) bindwithFiles() error {
+
+	fmt.Println("\nbinding with files...")
+
+	filesize := o.filesize
+	filename := o.filename
+	dirname := o.tmpDirName
+	fh, err := os.Create(filename)
+	if err != nil {
+		return errors.Wrap(err, "failed to create a file in download location")
+	}
+	defer fh.Close()
+
+	bar := pb.New64(int64(filesize))
+	bar.Start()
+
+	var f string
+	for i := 0; i < o.Procs; i++ {
+		f = fmt.Sprintf("%s/%s.%d.%d", dirname, filename, o.Procs, i)
+		subfp, err := os.Open(f)
+		if err != nil {
+			return errors.Wrap(err, "failed to open "+f+" in download location")
 		}
 
-		if len(pget.URLs) < 1 {
-			return errors.New("urls not found in the arguments passed")
+		proxy := bar.NewProxyReader(subfp)
+		io.Copy(fh, proxy)
+
+		// Not use defer
+		subfp.Close()
+
+		// remove a file in download location for join
+		if err := os.Remove(f); err != nil {
+			return errors.Wrap(err, "failed to remove a file in download location")
 		}
 	}
+
+	bar.Finish()
+
+	// remove download location
+	// RemoveAll reason: will create .DS_Store in download location if execute on mac
+	if err := os.RemoveAll(dirname); err != nil {
+		return errors.Wrap(err, "failed to remove download location")
+	}
+
+	fmt.Println("Complete")
 
 	return nil
 }
