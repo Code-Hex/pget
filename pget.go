@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"runtime"
 
 	"golang.org/x/sync/errgroup"
@@ -75,6 +74,7 @@ func (o *Object) run() error {
 		return errors.Wrap(err, "failed to prepare pget")
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	go o.checkSizeDifference(cancel)
 	if err := o.check(ctx); err != nil {
 		return errors.Wrap(err, "failed to check header")
@@ -82,10 +82,7 @@ func (o *Object) run() error {
 	if err := o.download(ctx); err != nil {
 		return err
 	}
-	if err := o.bindwithFiles(); err != nil {
-		return err
-	}
-	return nil
+	return o.bindwithFiles()
 }
 
 // prepare method defines the variables required to Download.
@@ -118,7 +115,7 @@ func (o *Object) setup() error {
 	o.setFileSize()
 	// did already get filename from -o option
 	if o.filename == "" {
-		o.filename = path.Base(o.URLs[0])
+		o.filename = utils.FileNameFromURL(o.TargetURLs[0])
 	}
 	o.tmpDirName = fmt.Sprintf("_%s.%d", o.filename, o.Procs)
 

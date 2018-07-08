@@ -3,9 +3,9 @@ package utils
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/ricochet2200/go-disk-usage/du"
@@ -30,32 +30,18 @@ func freeSpace() uint {
 }
 
 // FileNameFromURL gets from url
-func FileNameFromURL(targetDir, url string) string {
-	token := strings.Split(url, "/")
-
-	// get of filename from url
-	var original string
-	for i := 1; original == ""; i++ {
-		original = token[len(token)-i]
-	}
-
-	filename := original
-
+func FileNameFromURL(url string) string {
+	filename := path.Base(url)
+	filepath := filename
 	// create unique filename
 	for i := 1; ; i++ {
-		var filePath string
-		if targetDir == "" {
-			filePath = filename
-		} else {
-			filePath = fmt.Sprintf("%s/%s", targetDir, filename)
-		}
-		if _, err := os.Stat(filePath); err == nil {
-			filename = fmt.Sprintf("%s-%d", original, i)
+		if _, err := os.Stat(filepath); err == nil {
+			filepath = fmt.Sprintf("%s-%d", filename, i)
 		} else {
 			break
 		}
 	}
-	return filename
+	return filepath
 }
 
 // SubDirsize calcs direcory size
