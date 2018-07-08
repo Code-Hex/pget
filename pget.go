@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"runtime"
 
 	"golang.org/x/sync/errgroup"
 	pb "gopkg.in/cheggaaa/pb.v1"
@@ -58,7 +57,7 @@ func New() *Object {
 }
 
 func (o *Object) Run() int {
-	if err := o.run(); err != nil {
+	if err := o.run(context.Background()); err != nil {
 		if o.Trace {
 			fmt.Fprintf(os.Stderr, "Error:\n%+v\n", err)
 		} else {
@@ -69,15 +68,9 @@ func (o *Object) Run() int {
 	return 0
 }
 
-func (o *Object) run() error {
-	if err := o.prepare(); err != nil {
+func (o *Object) run(ctx context.Context) error {
+	if err := o.prepare(ctx); err != nil {
 		return errors.Wrap(err, "failed to prepare pget")
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go o.checkSizeDifference(cancel)
-	if err := o.check(ctx); err != nil {
-		return errors.Wrap(err, "failed to check header")
 	}
 	if err := o.download(ctx); err != nil {
 		return err
@@ -86,12 +79,12 @@ func (o *Object) run() error {
 }
 
 // prepare method defines the variables required to Download.
-func (o *Object) prepare() error {
+func (o *Object) prepare(ctx context.Context) error {
 	if err := o.parseOptions(os.Args[1:]); err != nil {
 		return errors.Wrap(err, "failed to parse command line args")
 	}
-	if procs := os.Getenv("GOMAXPROCS"); procs == "" {
-		runtime.GOMAXPROCS(o.Procs)
+	if err := o.check(ctx); err != nil {
+		return errors.Wrap(err, "failed to check header")
 	}
 	return nil
 }
@@ -99,7 +92,9 @@ func (o *Object) prepare() error {
 // check method checks it can request
 func (o *Object) check(ctx context.Context) error {
 	tctx, cancel := context.WithTimeout(ctx, o.Timeout)
+	go o.checkSizeDifference(cancel)
 	defer cancel()
+
 	eg, ectx := errgroup.WithContext(tctx)
 	for _, url := range o.URLs {
 		fmt.Printf("Checking now %s\n", url)
@@ -217,7 +212,7 @@ func (o *Object) bindwithFiles() error {
 		f = fmt.Sprintf("%s/%s.%d.%d", dirname, filename, o.Procs, i)
 		subfp, err := os.Open(f)
 		if err != nil {
-			return errors.Wrap(err, "failed to open "+f+" in download location")
+			return errors.Wrapf(err, "failed to open %s in download location", f)
 		}
 
 		proxy := bar.NewProxyReader(subfp)
