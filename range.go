@@ -1,5 +1,7 @@
 package pget
 
+import "fmt"
+
 type ranges struct {
 	high, low, worker uint
 }
@@ -19,4 +21,8 @@ func (o *Object) makeRanges(i, split uint) *ranges {
 
 func (r *ranges) filesize() uint {
 	return r.high - r.low
+}
+
+func (r *ranges) String() string {
+	return fmt.Sprintf("bytes=%d-%d", r.low, r.high)
 }

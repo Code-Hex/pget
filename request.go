@@ -10,13 +10,21 @@ import (
 	"github.com/pkg/errors"
 )
 
+func (o *Object) Head(ctx context.Context, url string) (*http.Response, error) {
+	req, err := http.NewRequest("HEAD", url, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create new HEAD request")
+	}
+	return o.client.Do(req.WithContext(ctx))
+}
+
 func (o *Object) Get(ctx context.Context, r *ranges, url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new GET request")
 	}
 	// set download ranges
-	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", r.low, r.high))
+	req.Header.Set("Range", r.String())
 	// set useragent
 	if o.UserAgent != "" {
 		req.Header.Set("User-Agent", o.UserAgent)
@@ -24,14 +32,6 @@ func (o *Object) Get(ctx context.Context, r *ranges, url string) (*http.Response
 	// set referer
 	if o.Referer != "" {
 		req.Header.Set("Referer", o.Referer)
-	}
-	return o.client.Do(req.WithContext(ctx))
-}
-
-func (o *Object) Head(ctx context.Context, url string) (*http.Response, error) {
-	req, err := http.NewRequest("HEAD", url, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create new HEAD request")
 	}
 	return o.client.Do(req.WithContext(ctx))
 }
