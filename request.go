@@ -73,7 +73,7 @@ func (o *Object) Requests(ctx context.Context, r *ranges, url string) func() err
 	return func() error {
 		res, err := o.Get(ctx, r, url)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("failed to split get requests: %d", r.worker))
+			return errors.Wrapf(err, "failed to split get requests: %d", r.worker)
 		}
 
 		partName := fmt.Sprintf(
@@ -86,11 +86,13 @@ func (o *Object) Requests(ctx context.Context, r *ranges, url string) func() err
 
 		output, err := os.OpenFile(partName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("failed to create %s in %s", o.filename, o.tmpDirName))
+			return errors.Wrapf(err, "failed to create %s in %s", o.filename, o.tmpDirName)
 		}
 		defer output.Close()
 
-		io.Copy(output, res.Body)
+		if _, err := io.Copy(output, res.Body); err != nil {
+			return errors.Wrapf(err, "failed to write response body to %s", partName)
+		}
 
 		return nil
 	}

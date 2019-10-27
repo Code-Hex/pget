@@ -8,31 +8,42 @@ import (
 	"runtime"
 
 	"github.com/pkg/errors"
-	"github.com/ricochet2200/go-disk-usage/du"
+	"github.com/shirou/gopsutil/disk"
 )
 
 // IsFree is check your disk space for size needed to download
 func IsFree(filesize, procs uint) error {
+	free, err := freeSpace()
+	if err != nil {
+		return err
+	}
 	// calculate split file size
 	split := filesize / procs
 	want := filesize + split
-	if freeSpace() < want {
+	if free < uint64(want) {
 		return errors.New("there is not sufficient free space in a disk")
 	}
 	return nil
 }
 
-func freeSpace() uint {
-	if runtime.GOOS == "windows" {
-		return uint(du.NewDiskUsage("C:\\").Free())
+func freeSpace() (uint64, error) {
+	path := func() string {
+		if runtime.GOOS == "windows" {
+			return "C:\\"
+		}
+		return "/"
+	}()
+	usage, err := disk.Usage(path)
+	if err != nil {
+		return 0, err
 	}
-	return uint(du.NewDiskUsage("/").Free())
+	return usage.Free, nil
 }
 
 // FileNameFromURL gets from url
-func FileNameFromURL(url string) string {
+func FileNameFromURL(url string) (filepath string) {
 	filename := path.Base(url)
-	filepath := filename
+	filepath = filename
 	// create unique filename
 	for i := 1; ; i++ {
 		if _, err := os.Stat(filepath); err == nil {
@@ -41,7 +52,7 @@ func FileNameFromURL(url string) string {
 			break
 		}
 	}
-	return filepath
+	return
 }
 
 // SubDirsize calcs direcory size

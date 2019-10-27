@@ -15,14 +15,19 @@ func (o *Object) progressBar(ctx context.Context) func() error {
 	dirname := o.tmpDirName
 	filesize := int64(o.filesize)
 	bar := pb.New64(filesize)
+
+	// To save cpu resource
+	ticker := time.NewTicker(100 * time.Millisecond)
 	return func() error {
 		bar.Start()
+		defer ticker.Stop()
+
 		for {
 			select {
 			case <-ctx.Done():
 				return nil
-			default:
-				size, err := o.Progress(dirname)
+			case <-ticker.C:
+				size, err := progress(dirname)
 				if err != nil {
 					return errors.Wrap(err, "failed to get directory size")
 				}
@@ -33,15 +38,10 @@ func (o *Object) progressBar(ctx context.Context) func() error {
 					bar.Finish()
 					return nil
 				}
-
-				// To save cpu resource
-				time.Sleep(100 * time.Millisecond)
 			}
 		}
 	}
 }
 
 // Progress In order to confirm the degree of progress
-func (o *Object) Progress(dirname string) (int64, error) {
-	return utils.SubDirsize(dirname)
-}
+var progress = utils.SubDirsize

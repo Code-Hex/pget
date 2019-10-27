@@ -2,10 +2,6 @@ package pget
 
 type ignore struct{}
 
-type causer interface {
-	Cause() error
-}
-
 func (o *Object) makeIgnoreErr() error {
 	return &ignore{}
 }
@@ -17,6 +13,9 @@ func (i *ignore) Error() string {
 
 // getRootErr gets important message from wrapped error message
 func (o *Object) getRootErr(err error) error {
+	type causer interface {
+		Cause() error
+	}
 	for e := err; e != nil; {
 		switch e.(type) {
 		case *ignore:
