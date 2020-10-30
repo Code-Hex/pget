@@ -2,3 +2,5 @@
 !.gitignore
 !.travis.yml
 vendor
+bin/*
+!bin/.gitkeep
