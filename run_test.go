@@ -30,9 +30,6 @@ func TestRun(t *testing.T) {
 	ts := httptest.NewServer(mux)
 	defer ts.Close()
 
-	// begin test
-	fmt.Fprintf(os.Stdout, "Testing pget_test\n")
-	fmt.Fprintf(os.Stdout, "First\n")
 	url := ts.URL
 
 	os.Args = []string{
@@ -48,7 +45,7 @@ func TestRun(t *testing.T) {
 		t.Errorf("failed to copy: %s", err)
 	}
 
-	if err := archiver.TarGz.Open("resume.tar.gz", "."); err != nil {
+	if err := archiver.NewTarGz().Unarchive("resume.tar.gz", "."); err != nil {
 		t.Errorf("failed to untargz: %s", err)
 	}
 
@@ -87,8 +84,6 @@ func TestRun(t *testing.T) {
 	if err := os.RemoveAll("./target_dir"); err != nil {
 		t.Errorf("failed to remove of result file: %s", err)
 	}
-	fmt.Fprintf(os.Stdout, "Done\n")
-	fmt.Fprintf(os.Stdout, "pget_test Done\n\n")
 }
 
 func copy(src, dest string) error {
