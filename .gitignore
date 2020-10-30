@@ -1,6 +1,7 @@
 .*
 !.gitignore
 !.travis.yml
+!.github
 vendor
 bin/*
 !bin/.gitkeep
