@@ -19,7 +19,11 @@ jobs:
     - name: Setup go
       uses: actions/setup-go@v2
     - name: Test
-      run: go test ./...
+      run: go test ./... -coverprofile=coverage.txt
+    - name: upload coverage
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
     - name: Run GoReleaser
       if: contains(github.ref, 'tags/v')
       uses: goreleaser/goreleaser-action@v1
