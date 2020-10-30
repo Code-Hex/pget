@@ -1,8 +1,8 @@
 Pget - parallel file download client
 =======
 
-[![Build Status](https://travis-ci.org/Code-Hex/pget.svg?branch=master)](https://travis-ci.org/Code-Hex/pget)
-[![Coverage Status](https://coveralls.io/repos/github/Code-Hex/pget/badge.svg?branch=master)](https://coveralls.io/github/Code-Hex/pget?branch=master)
+![test](https://github.com/Code-Hex/pget/workflows/test/badge.svg)
+[![codecov](https://codecov.io/gh/Code-Hex/pget/branch/master/graph/badge.svg?token=jUVGnY7ZlG)](undefined)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Code-Hex/pget)](https://goreportcard.com/report/github.com/Code-Hex/pget)
 [![GitHub release](https://img.shields.io/github/release/Code-Hex/pget.svg)](https://github.com/Code-Hex/pget)
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
