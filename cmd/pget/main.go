@@ -7,10 +7,11 @@ import (
 	"github.com/Code-Hex/pget"
 )
 
-func main() {
+var version string
 
+func main() {
 	cli := pget.New()
-	if err := cli.Run(); err != nil {
+	if err := cli.Run(version); err != nil {
 		if cli.Trace {
 			fmt.Fprintf(os.Stderr, "Error:\n%+v\n", err)
 		} else {
@@ -18,6 +19,4 @@ func main() {
 		}
 		os.Exit(1)
 	}
-
-	os.Exit(0)
 }

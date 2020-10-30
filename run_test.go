@@ -50,7 +50,7 @@ func TestRun(t *testing.T) {
 	}
 
 	p := New()
-	if err := p.Run(); err != nil {
+	if err := p.Run(version); err != nil {
 		t.Errorf("failed to Run: %s", err)
 	}
 
@@ -72,7 +72,7 @@ func TestRun(t *testing.T) {
 		"--trace",
 	}
 
-	if err := p.Run(); err != nil {
+	if err := p.Run(version); err != nil {
 		t.Errorf("failed to Run: %s", err)
 	}
 

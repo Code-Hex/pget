@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const version = "test_version"
+
 func TestParts_of_ready(t *testing.T) {
 
 	// begin test
@@ -23,8 +25,8 @@ func TestParts_of_ready(t *testing.T) {
 	}
 
 	p := New()
-	var opts Options
-	if err := p.parseOptions(&opts, args); err != nil {
+	opts, err := p.parseOptions(args, version)
+	if err != nil {
 		t.Errorf("failed to parse command line args: %s", err)
 	}
 
@@ -52,8 +54,7 @@ func TestShowhelp(t *testing.T) {
 	}
 
 	p := New()
-	opts := Options{}
-	err := p.parseOptions(&opts, args)
+	_, err := p.parseOptions(args, version)
 	assert.NotNil(t, err)
 
 	args = []string{
@@ -62,38 +63,10 @@ func TestShowhelp(t *testing.T) {
 	}
 
 	p = New()
-	opts = Options{}
-	err = p.parseOptions(&opts, args)
+	_, err = p.parseOptions(args, version)
 	assert.NotNil(t, err)
 
 	fmt.Fprintf(os.Stdout, "showhelp_test Done\n\n")
-}
-
-func TestShowversion(t *testing.T) {
-	// begin test
-	fmt.Fprintf(os.Stdout, "Testing showversion_test\n")
-
-	args := []string{
-		"pget",
-		"-v",
-	}
-
-	p := New()
-	opts := Options{}
-	err := p.parseOptions(&opts, args)
-	assert.NotNil(t, err)
-
-	args = []string{
-		"pget",
-		"--version",
-	}
-
-	p = New()
-	opts = Options{}
-	err = p.parseOptions(&opts, args)
-	assert.NotNil(t, err)
-
-	fmt.Fprintf(os.Stdout, "showversion_test Done\n\n")
 }
 
 func TestShowisupdate(t *testing.T) {
@@ -106,8 +79,7 @@ func TestShowisupdate(t *testing.T) {
 	}
 
 	p := New()
-	opts := Options{}
-	err := p.parseOptions(&opts, args)
+	_, err := p.parseOptions(args, version)
 	assert.NotNil(t, err)
 
 	fmt.Fprintf(os.Stdout, "showversion_test Done\n\n")

@@ -49,7 +49,6 @@ You can do this
 ```
   Options:
   -h,  --help                   print usage and exit
-  -v,  --version                display the version of pget and exit
   -p,  --procs <num>            split ratio to download file
   -o,  --output <filename>      output file to <filename>
   -d,  --target-dir <path>      path to the directory to save the downloaded file, filename will be taken from url

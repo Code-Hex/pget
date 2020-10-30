@@ -11,11 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	version = "0.0.6"
-	msg     = "Pget v" + version + ", parallel file download client\n"
-)
-
 // Pget structs
 type Pget struct {
 	Trace bool
@@ -65,8 +60,8 @@ func (pget Pget) ErrTop(err error) error {
 }
 
 // Run execute methods in pget package
-func (pget *Pget) Run() error {
-	if err := pget.Ready(); err != nil {
+func (pget *Pget) Run(version string) error {
+	if err := pget.Ready(version); err != nil {
 		return pget.ErrTop(err)
 	}
 
@@ -86,13 +81,13 @@ func (pget *Pget) Run() error {
 }
 
 // Ready method define the variables required to Download.
-func (pget *Pget) Ready() error {
+func (pget *Pget) Ready(version string) error {
 	if procs := os.Getenv("GOMAXPROCS"); procs == "" {
 		runtime.GOMAXPROCS(pget.Procs)
 	}
 
-	var opts Options
-	if err := pget.parseOptions(&opts, os.Args[1:]); err != nil {
+	opts, err := pget.parseOptions(os.Args[1:], version)
+	if err != nil {
 		return errors.Wrap(err, "failed to parse command line args")
 	}
 
@@ -160,41 +155,36 @@ func (i ignore) Cause() error {
 	return i.err
 }
 
-func (pget *Pget) parseOptions(opts *Options, argv []string) error {
-
+func (pget *Pget) parseOptions(argv []string, version string) (*Options, error) {
+	var opts Options
 	if len(argv) == 0 {
-		os.Stdout.Write(opts.usage())
-		return pget.makeIgnoreErr()
+		os.Stdout.Write(opts.usage(version))
+		return nil, pget.makeIgnoreErr()
 	}
 
-	o, err := opts.parse(argv)
+	o, err := opts.parse(argv, version)
 	if err != nil {
-		return errors.Wrap(err, "failed to parse command line options")
+		return nil, errors.Wrap(err, "failed to parse command line options")
 	}
 
 	if opts.Help {
-		os.Stdout.Write(opts.usage())
-		return pget.makeIgnoreErr()
-	}
-
-	if opts.Version {
-		os.Stdout.Write([]byte(msg))
-		return pget.makeIgnoreErr()
+		os.Stdout.Write(opts.usage(version))
+		return nil, pget.makeIgnoreErr()
 	}
 
 	if opts.Update {
-		result, err := opts.isupdate()
+		result, err := opts.isupdate(version)
 		if err != nil {
-			return errors.Wrap(err, "failed to parse command line options")
+			return nil, errors.Wrap(err, "failed to parse command line options")
 		}
 
 		os.Stdout.Write(result)
-		return pget.makeIgnoreErr()
+		return nil, pget.makeIgnoreErr()
 	}
 
 	pget.args = o
 
-	return nil
+	return &opts, nil
 }
 
 func (pget *Pget) parseURLs() error {

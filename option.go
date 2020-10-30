@@ -13,7 +13,6 @@ import (
 // Options struct for parse command line arguments
 type Options struct {
 	Help      bool   `short:"h" long:"help"`
-	Version   bool   `short:"v" long:"version"`
 	Procs     int    `short:"p" long:"procs"`
 	Output    string `short:"o" long:"output"`
 	TargetDir string `short:"d" long:"target-dir"`
@@ -24,26 +23,26 @@ type Options struct {
 	Trace     bool   `long:"trace"`
 }
 
-func (opts *Options) parse(argv []string) ([]string, error) {
+func (opts *Options) parse(argv []string, version string) ([]string, error) {
 	p := flags.NewParser(opts, flags.PrintErrors)
 	args, err := p.ParseArgs(argv)
 
 	if err != nil {
-		os.Stderr.Write(opts.usage())
+		os.Stderr.Write(opts.usage(version))
 		return nil, errors.Wrap(err, "invalid command line options")
 	}
 
 	return args, nil
 }
 
-func (opts Options) usage() []byte {
+func (opts Options) usage(version string) []byte {
 	buf := bytes.Buffer{}
 
+	msg := "Pget %s, parallel file download client\n"
 	fmt.Fprintf(&buf, msg+
 		`Usage: pget [options] URL
   Options:
   -h,  --help                   print usage and exit
-  -v,  --version                display the version of pget and exit
   -p,  --procs <num>            split ratio to download file
   -o,  --output <filename>      output file to <filename>
   -d,  --target-dir <path>    	path to the directory to save the downloaded file, filename will be taken from url
@@ -52,11 +51,11 @@ func (opts Options) usage() []byte {
   -r,  --referer <referer>      identify as <referer>
   --check-update                check if there is update available
   --trace                       display detail error messages
-`)
+`, version)
 	return buf.Bytes()
 }
 
-func (opts Options) isupdate() ([]byte, error) {
+func (opts Options) isupdate(version string) ([]byte, error) {
 	buf := bytes.Buffer{}
 	result, err := updater.CheckWithTag("Code-Hex", "pget", version)
 	if err != nil {
