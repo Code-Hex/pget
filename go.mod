@@ -6,8 +6,8 @@ require (
 	github.com/Code-Hex/updater v0.0.0-20160712085121-c3f278672520
 	github.com/antonholmquist/jason v1.0.1-0.20160829104012-962e09b85496 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20161001163130-7b3beb6df3c4
+	github.com/cheggaaa/pb/v3 v3.0.8 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
-	github.com/fatih/color v1.9.0 // indirect
 	github.com/frankban/quicktest v1.11.1 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/jessevdk/go-flags v0.0.0-20160903113131-4cc2832a6e6d

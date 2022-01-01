@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cheggaaa/pb/v3"
 	"github.com/pkg/errors"
 	"github.com/ricochet2200/go-disk-usage/du"
-	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // Data struct has file of relational data
@@ -29,7 +29,6 @@ type Utils interface {
 	BindwithFiles(int) error
 	IsFree(uint) error
 	Progress(string) (int64, error)
-	MakeRange(uint, uint, uint) Range
 	URLFileName(string, string) string
 
 	// like setter
@@ -121,12 +120,14 @@ func (d *Data) URLFileName(targetDir, url string) string {
 
 // SetDirName set to Data structs member
 func (d *Data) SetDirName(path, filename string, procs int) {
-	if path == "" {
-		d.dirname = fmt.Sprintf("_%s.%d", filename, procs)
-	} else {
-		d.dirname = fmt.Sprintf("%s/_%s.%d", path, filename, procs)
-	}
+	d.dirname = GetDirname(path, filename, procs)
+}
 
+func GetDirname(targetDir, filename string, procs int) string {
+	if targetDir == "" {
+		return fmt.Sprintf("_%s.%d", filename, procs)
+	}
+	return fmt.Sprintf("%s/_%s.%d", targetDir, filename, procs)
 }
 
 func (d Data) freeSpace() (freespace uint) {
@@ -151,7 +152,7 @@ func (d Data) IsFree(split uint) error {
 }
 
 // Progress In order to confirm the degree of progress
-func (d Data) Progress(dirname string) (int64, error) {
+func Progress(dirname string) (int64, error) {
 	return subDirsize(dirname)
 }
 
@@ -167,19 +168,22 @@ func subDirsize(dirname string) (int64, error) {
 	return size, err
 }
 
-// MakeRange will return Range struct to download function
-func (d *Data) MakeRange(i, split, procs uint) Range {
-	low := split * i
-	high := low + split - 1
+func makeRange(i, procs int, rangeSize, contentLength int64) Range {
+	low := rangeSize * int64(i)
 	if i == procs-1 {
-		high = d.FileSize()
+		return Range{
+			low:  low,
+			high: contentLength,
+		}
 	}
-
 	return Range{
-		low:    low,
-		high:   high,
-		worker: i,
+		low:  low,
+		high: low + rangeSize - 1,
 	}
+}
+
+func (r Range) BytesRange() string {
+	return fmt.Sprintf("bytes=%d-%d", r.low, r.high)
 }
 
 // ProgressBar is to show progressbar
@@ -195,21 +199,45 @@ func (d Data) ProgressBar(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			size, err := d.Progress(dirname)
+			size, err := Progress(dirname)
 			if err != nil {
 				return errors.Wrap(err, "failed to get directory size")
 			}
 
 			if size < filesize {
-				bar.Set64(size)
+				bar.Add64(size)
 			} else {
-				bar.Set64(filesize)
+				bar.Add64(filesize)
 				bar.Finish()
 				return nil
 			}
 
 			// To save cpu resource
 			time.Sleep(100 * time.Millisecond)
+		}
+	}
+}
+
+func ProgressBar(ctx context.Context, contentLength int64, dirname string) error {
+	bar := pb.Start64(contentLength)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(100 * time.Millisecond): // To save cpu resource
+			size, err := Progress(dirname)
+			if err != nil {
+				return errors.Wrap(err, "failed to get directory size")
+			}
+
+			if size < contentLength {
+				bar.SetCurrent(size)
+			} else {
+				bar.SetCurrent(contentLength)
+				bar.Finish()
+				return nil
+			}
 		}
 	}
 }

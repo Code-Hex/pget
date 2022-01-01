@@ -2,12 +2,14 @@ package pget
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -32,15 +34,6 @@ func TestRun(t *testing.T) {
 
 	url := ts.URL
 
-	os.Args = []string{
-		"pget",
-		"-p",
-		"3",
-		fmt.Sprintf("%s/%s", url, "file.name"),
-		"--timeout",
-		"5",
-	}
-
 	if err := copy("_testdata/resume.tar.gz", "resume.tar.gz"); err != nil {
 		t.Errorf("failed to copy: %s", err)
 	}
@@ -50,7 +43,14 @@ func TestRun(t *testing.T) {
 	}
 
 	p := New()
-	if err := p.Run(version); err != nil {
+	if err := p.Run(context.Background(), version, []string{
+		"pget",
+		"-p",
+		"3",
+		fmt.Sprintf("%s/%s", url, "file.name"),
+		"--timeout",
+		"5",
+	}); err != nil {
 		t.Errorf("failed to Run: %s", err)
 	}
 
@@ -58,31 +58,20 @@ func TestRun(t *testing.T) {
 		t.Errorf("failed to remove of test file: %s", err)
 	}
 
-	if err := os.Remove(p.FileName()); err != nil {
-		t.Errorf("failed to remove of result file: %s", err)
-	}
-	fmt.Fprintf(os.Stdout, "Done\n")
-	fmt.Fprintf(os.Stdout, "Second\n")
-
-	os.Args = []string{
+	tmpDir := t.TempDir()
+	if err := p.Run(context.Background(), version, []string{
 		"pget",
-		fmt.Sprintf("%s/%s", url, "file.name"),
+		path.Join(url, "file.name"),
 		"-d",
-		"./target_dir",
+		tmpDir,
 		"--trace",
-	}
-
-	if err := p.Run(version); err != nil {
+	}); err != nil {
 		t.Errorf("failed to Run: %s", err)
 	}
 
 	// check exist file
-	if _, err := os.Stat("./target_dir"); os.IsNotExist(err) {
+	if _, err := os.Stat(tmpDir); os.IsNotExist(err) {
 		t.Errorf("failed to output to destination")
-	}
-
-	if err := os.RemoveAll("./target_dir"); err != nil {
-		t.Errorf("failed to remove of result file: %s", err)
 	}
 }
 

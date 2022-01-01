@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -11,11 +12,11 @@ var version string
 
 func main() {
 	cli := pget.New()
-	if err := cli.Run(version); err != nil {
+	if err := cli.Run(context.Background(), version, os.Args[1:]); err != nil {
 		if cli.Trace {
 			fmt.Fprintf(os.Stderr, "Error:\n%+v\n", err)
 		} else {
-			fmt.Fprintf(os.Stderr, "Error:\n  %v\n", cli.ErrTop(err))
+			fmt.Fprintf(os.Stderr, "Error:\n  %v\n", err)
 		}
 		os.Exit(1)
 	}
