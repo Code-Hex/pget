@@ -71,19 +71,6 @@ func TestRunResume(t *testing.T) {
 		filepath.Join("_testdata", "test.tar.gz"),
 		filepath.Join(tmpDir, "file.name"),
 	)
-
-	if err := p.Run(context.Background(), version, []string{
-		"pget",
-		targetURL,
-		"--trace",
-	}); err != nil {
-		t.Errorf("failed to Run: %s", err)
-	}
-
-	// check exist file
-	if _, err := os.Stat(resumeFilePath); os.IsNotExist(err) {
-		t.Errorf("failed to output to destination")
-	}
 }
 
 func copy(src, dest string) error {
