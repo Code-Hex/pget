@@ -18,6 +18,8 @@ func TestParts_of_ready(t *testing.T) {
 		"2",
 		url,
 		"--trace",
+		"--output",
+		"filename.tar.gz",
 	}
 
 	p := New()
@@ -28,12 +30,13 @@ func TestParts_of_ready(t *testing.T) {
 
 	assert.Equal(t, true, opts.Trace, "failed to parse arguments of trace")
 	assert.Equal(t, opts.Procs, 2, "failed to parse arguments of procs")
+	assert.Equal(t, "filename.tar.gz", opts.Output, "failed to parse output")
 
 	if err := p.parseURLs(); err != nil {
 		t.Errorf("failed to parse of url: %s", err)
 	}
 
-	assert.Equal(t, "filename.tar.gz", p.Filename, "failed to get of filename from url")
+	assert.Len(t, p.URLs, 1)
 }
 
 func TestShowhelp(t *testing.T) {

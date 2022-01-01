@@ -16,11 +16,10 @@ import (
 
 // Pget structs
 type Pget struct {
-	Trace     bool
-	Filename  string
-	TargetDir string
-	Procs     int
-	URLs      []string
+	Trace  bool
+	Output string
+	Procs  int
+	URLs   []string
 
 	args      []string
 	timeout   int
@@ -52,8 +51,20 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 	}
 
 	filename := target.Filename
-	if pget.Filename != "" {
-		filename = pget.Filename
+
+	var dir string
+	if pget.Output != "" {
+		fi, err := os.Stat(pget.Output)
+		if err == nil && fi.IsDir() {
+			dir = pget.Output
+		} else {
+			dir, filename = filepath.Split(pget.Output)
+			if dir != "" {
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					return errors.Wrapf(err, "failed to create diretory at %s", dir)
+				}
+			}
+		}
 	}
 
 	opts := []DownloadOption{
@@ -63,7 +74,7 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 
 	return Download(ctx, &DownloadConfig{
 		Filename:      filename,
-		Dirname:       GetDirname(pget.TargetDir, filename, pget.Procs),
+		Dirname:       dir,
 		ContentLength: target.ContentLength,
 		Procs:         pget.Procs,
 		URLs:          target.URLs,
@@ -98,7 +109,7 @@ func (pget *Pget) Ready(version string, args []string) error {
 	}
 
 	if opts.Output != "" {
-		pget.Filename = opts.Output
+		pget.Output = opts.Output
 	}
 
 	if opts.UserAgent != "" {
@@ -108,24 +119,6 @@ func (pget *Pget) Ready(version string, args []string) error {
 	if opts.Referer != "" {
 		pget.referer = opts.Referer
 	}
-
-	if opts.TargetDir != "" {
-		info, err := os.Stat(opts.TargetDir)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				return errors.Wrap(err, "target dir is invalid")
-			}
-
-			if err := os.MkdirAll(opts.TargetDir, 0755); err != nil {
-				return errors.Wrapf(err, "failed to create diretory at %s", opts.TargetDir)
-			}
-
-		} else if !info.IsDir() {
-			return errors.New("target dir is not a valid directory")
-		}
-		opts.TargetDir = strings.TrimSuffix(opts.TargetDir, string(filepath.Separator))
-	}
-	pget.TargetDir = opts.TargetDir
 
 	return nil
 }

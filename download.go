@@ -18,22 +18,22 @@ type AssignmentConfig struct {
 	TaskSize      int64 // download filesize per task
 	ContentLength int64 // full download filesize
 	URLs          []string
-	Dirname       string
+	PartialDir    string
 	Filename      string
 }
 
 type Task struct {
-	ID       int
-	Procs    int
-	URL      string
-	Range    Range
-	Dirname  string
-	Filename string
+	ID         int
+	Procs      int
+	URL        string
+	Range      Range
+	PartialDir string
+	Filename   string
 }
 
 func (t *Task) destPath() string {
 	return filepath.Join(
-		t.Dirname,
+		t.PartialDir,
 		fmt.Sprintf("%s.%d.%d", t.Filename, t.Procs, t.ID),
 	)
 }
@@ -80,7 +80,7 @@ func Assignment(c *AssignmentConfig) []*Task {
 		r := makeRange(i, c.Procs, c.TaskSize, c.ContentLength)
 
 		partName := filepath.Join(
-			c.Dirname,
+			c.PartialDir,
 			fmt.Sprintf("%s.%d.%d", c.Filename, c.Procs, i),
 		)
 
@@ -101,12 +101,12 @@ func Assignment(c *AssignmentConfig) []*Task {
 		}
 
 		tasks = append(tasks, &Task{
-			ID:       i,
-			Procs:    c.Procs,
-			URL:      c.URLs[totalActiveProcs%len(c.URLs)],
-			Range:    r,
-			Dirname:  c.Dirname,
-			Filename: c.Filename,
+			ID:         i,
+			Procs:      c.Procs,
+			URL:        c.URLs[totalActiveProcs%len(c.URLs)],
+			Range:      r,
+			PartialDir: c.PartialDir,
+			Filename:   c.Filename,
 		})
 
 		totalActiveProcs++
@@ -129,7 +129,6 @@ type DownloadOption func(c *DownloadConfig)
 
 func WithUserAgent(ua string) DownloadOption {
 	return func(c *DownloadConfig) {
-
 		c.makeRequestOption.useragent = ua
 	}
 }
@@ -141,8 +140,9 @@ func WithReferer(referer string) DownloadOption {
 }
 
 func Download(ctx context.Context, c *DownloadConfig, opts ...DownloadOption) error {
+	partialDir := getPartialDirname(c.Dirname, c.Filename, c.Procs)
 	// create download location
-	if err := os.MkdirAll(c.Dirname, 0755); err != nil {
+	if err := os.MkdirAll(partialDir, 0755); err != nil {
 		return errors.Wrap(err, "failed to mkdir for download location")
 	}
 
@@ -157,7 +157,7 @@ func Download(ctx context.Context, c *DownloadConfig, opts ...DownloadOption) er
 		TaskSize:      c.ContentLength / int64(c.Procs),
 		ContentLength: c.ContentLength,
 		URLs:          c.URLs,
-		Dirname:       c.Dirname,
+		PartialDir:    partialDir,
 		Filename:      c.Filename,
 	})
 
@@ -165,7 +165,7 @@ func Download(ctx context.Context, c *DownloadConfig, opts ...DownloadOption) er
 		return err
 	}
 
-	return bindFiles(c)
+	return bindFiles(c, partialDir)
 }
 
 func parallelDownload(ctx context.Context, c *DownloadConfig, tasks []*Task) error {
@@ -209,10 +209,11 @@ func (t *Task) download(req *http.Request) error {
 	return nil
 }
 
-func bindFiles(c *DownloadConfig) error {
+func bindFiles(c *DownloadConfig, partialDir string) error {
 	fmt.Println("\nbinding with files...")
 
-	f, err := os.Create(c.Filename)
+	destPath := filepath.Join(c.Dirname, c.Filename)
+	f, err := os.Create(destPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to create a file in download location")
 	}
@@ -241,7 +242,7 @@ func bindFiles(c *DownloadConfig) error {
 	}
 
 	for i := 0; i < c.Procs; i++ {
-		name := fmt.Sprintf("%s/%s.%d.%d", c.Dirname, c.Filename, c.Procs, i)
+		name := fmt.Sprintf("%s/%s.%d.%d", partialDir, c.Filename, c.Procs, i)
 		if err := copyFn(name); err != nil {
 			return err
 		}
@@ -251,7 +252,7 @@ func bindFiles(c *DownloadConfig) error {
 
 	// remove download location
 	// RemoveAll reason: will create .DS_Store in download location if execute on mac
-	if err := os.RemoveAll(c.Dirname); err != nil {
+	if err := os.RemoveAll(partialDir); err != nil {
 		return errors.Wrap(err, "failed to remove download location")
 	}
 

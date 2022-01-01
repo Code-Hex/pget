@@ -53,7 +53,7 @@ func TestPget(t *testing.T) {
 	cfg := &DownloadConfig{
 		Filename:      "test.tar.gz",
 		ContentLength: 1719652,
-		Dirname:       GetDirname(tmpdir, "test.tar.gz", 4),
+		Dirname:       tmpdir,
 		Procs:         4,
 		URLs:          []string{ts.URL},
 	}
@@ -90,21 +90,7 @@ func TestPget(t *testing.T) {
 			}
 		}
 
-		fp := "_testdata/test.tar.gz"
-		want, err := get2md5(fp)
-
-		if err != nil {
-			t.Errorf("failed to md5sum of original file: %s", err)
-		}
-
-		resultfp, err := get2md5(cfg.Filename)
-		if err != nil {
-			t.Errorf("failed to md5sum of result file: %s", err)
-		}
-
-		if want != resultfp {
-			t.Errorf("expected %s got %s", want, resultfp)
-		}
+		cmpFileChecksum(t, "_testdata/test.tar.gz", filepath.Join(tmpdir, cfg.Filename))
 	})
 }
 
@@ -125,4 +111,22 @@ func get2md5(path string) (string, error) {
 	bytes := hash.Sum(nil)[:16]
 
 	return hex.EncodeToString(bytes), nil
+}
+
+func cmpFileChecksum(t *testing.T, wantPath, gotPath string) {
+	t.Helper()
+	want, err := get2md5(wantPath)
+
+	if err != nil {
+		t.Fatalf("failed to md5sum of original file: %s", err)
+	}
+
+	resultfp, err := get2md5(gotPath)
+	if err != nil {
+		t.Fatalf("failed to md5sum of result file: %s", err)
+	}
+
+	if want != resultfp {
+		t.Errorf("expected %s got %s", want, resultfp)
+	}
 }

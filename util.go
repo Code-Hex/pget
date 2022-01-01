@@ -11,15 +11,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GetDirname(targetDir, filename string, procs int) string {
+func getPartialDirname(targetDir, filename string, procs int) string {
 	if targetDir == "" {
 		return fmt.Sprintf("_%s.%d", filename, procs)
 	}
-	return fmt.Sprintf("%s/_%s.%d", targetDir, filename, procs)
+	return filepath.Join(targetDir, fmt.Sprintf("_%s.%d", filename, procs))
 }
 
-// Progress In order to confirm the degree of progress
-func Progress(dirname string) (int64, error) {
+// checkProgress In order to confirm the degree of progress
+func checkProgress(dirname string) (int64, error) {
 	return subDirsize(dirname)
 }
 
@@ -61,7 +61,7 @@ func ProgressBar(ctx context.Context, contentLength int64, dirname string) error
 		case <-ctx.Done():
 			return nil
 		case <-time.After(100 * time.Millisecond): // To save cpu resource
-			size, err := Progress(dirname)
+			size, err := checkProgress(dirname)
 			if err != nil {
 				return errors.Wrap(err, "failed to get directory size")
 			}
