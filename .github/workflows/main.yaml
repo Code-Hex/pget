@@ -1,0 +1,35 @@
+on:
+  push:
+    branches:
+      - "master"
+    tags:
+      - "v*.*.*"
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Setup go
+      uses: actions/setup-go@v2
+    - name: Declare some variables
+      id: vars
+      run: |
+        echo "::set-output name=coverage_txt::${RUNNER_TEMP}/coverage.txt"
+    - name: Test Coverage (pkg)
+      run: go test ./... -coverprofile=${{ steps.vars.outputs.coverage_txt }}
+    - name: Upload coverage
+      uses: codecov/codecov-action@v2
+      with:
+        files: ${{ steps.vars.outputs.coverage_txt }}
+    - name: Run GoReleaser
+      if: contains(github.ref, 'tags/v')
+      uses: goreleaser/goreleaser-action@v2
+      with:
+        version: latest
+        args: release --rm-dist
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
