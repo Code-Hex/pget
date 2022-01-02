@@ -2,6 +2,7 @@ package pget
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -10,12 +11,17 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"runtime"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	stdout = ioutil.Discard
+	os.Exit(m.Run())
+}
 
 func TestPget(t *testing.T) {
 	// listening file server
@@ -46,101 +52,51 @@ func TestPget(t *testing.T) {
 
 	// begin tests
 	url := ts.URL
-	TChecking(t, url)
-	TDownload(t, url)
-	TBindwithFiles(t)
-}
 
-func TChecking(t *testing.T, url string) {
-	fmt.Fprintf(os.Stdout, "Testing checking_test\n")
+	tmpdir := t.TempDir()
 
-	p := New()
-	p.URLs = append(p.URLs, url)
-
-	if err := p.Checking(); err != nil {
-		t.Errorf("failed to check header: %s", err)
+	cfg := &DownloadConfig{
+		Filename:      "test.tar.gz",
+		ContentLength: 1719652,
+		Dirname:       tmpdir,
+		Procs:         4,
+		URLs:          []string{ts.URL},
 	}
 
-	// could redirect?
-	assert.NotEqual(t, p.TargetURLs[0], url, "failed to get of the last url in the redirect")
-	fmt.Fprintf(os.Stdout, "checking_test Done\n\n")
-}
+	t.Run("check", func(t *testing.T) {
+		target, err := Check(context.Background(), &CheckConfig{
+			URLs:    []string{url},
+			Timeout: 10 * time.Second,
+		})
 
-func TDownload(t *testing.T, url string) {
-	fmt.Fprintf(os.Stdout, "Testing download_test\n")
-
-	dir := fmt.Sprintf("_test.tar.gz.%d", runtime.NumCPU())
-	p := New()
-
-	p.URLs = append(p.URLs, url)
-	p.Utils = &Data{
-		filename: "test.tar.gz",
-		dirname:  "_test.tar.gz",
-	}
-
-	if err := p.Checking(); err != nil {
-		t.Errorf("failed to check header: %s", err)
-	}
-
-	assert.Equal(t, p.FileName(), "test.tar.gz", "expected 'test.tar.gz' got %s", p.FileName())
-	assert.Equal(t, p.DirName(), dir, "expected '"+dir+"' got %s", p.DirName())
-	assert.Equal(t, p.FileSize(), uint(1719652), "expected '1719652' got %d", p.DirName())
-
-	p.Procs = runtime.NumCPU()
-
-	if err := p.Download(); err != nil {
-		t.Errorf("failed to download: %s", err)
-	}
-
-	// check of the file to exists
-	for i := 0; i < p.Procs; i++ {
-		_, err := os.Stat(fmt.Sprintf("_test.tar.gz.4/test.tar.gz.2.%d", i))
-		if err == nil {
-			t.Errorf("file not exist: %s", err)
+		if err != nil {
+			t.Fatalf("failed to check header: %s", err)
 		}
-	}
 
-	fmt.Fprintf(os.Stdout, "download_test Done\n\n")
-}
+		if len(target.URLs) == 0 {
+			t.Fatalf("invalid URL length %d", len(target.URLs))
+		}
 
-func TBindwithFiles(t *testing.T) {
-	fmt.Fprintf(os.Stdout, "Testing bind_test\n")
+		// could redirect?
+		assert.NotEqual(t, target.URLs[0], url, "failed to get of the last url in the redirect")
+	})
 
-	dir := fmt.Sprintf("_test.tar.gz.%d", runtime.NumCPU())
+	t.Run("download", func(t *testing.T) {
+		err := Download(context.Background(), cfg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// check of the file to exists
+		for i := 0; i < cfg.Procs; i++ {
+			filename := filepath.Join(tmpdir, "_test.tar.gz.4", fmt.Sprintf("test.tar.gz.2.%d", i))
+			_, err := os.Stat(filename)
+			if err == nil {
+				t.Errorf("%q does not exist: %v", filename, err)
+			}
+		}
 
-	p := New()
-	p.Procs = runtime.NumCPU()
-
-	p.Utils = &Data{
-		filename:     "test.tar.gz",
-		filesize:     uint(1719652),
-		dirname:      dir,
-		fullfilename: "test.tar.gz",
-	}
-
-	fp := "_testdata/test.tar.gz"
-	original, err := get2md5(fp)
-
-	if err != nil {
-		t.Errorf("failed to md5sum of original file: %s", err)
-	}
-
-	if err := p.BindwithFiles(p.Procs); err != nil {
-		t.Errorf("failed to BindwithFiles: %s", err)
-	}
-
-	resultfp, err := get2md5(p.FileName())
-	if err != nil {
-		t.Errorf("failed to md5sum of result file: %s", err)
-	}
-
-	assert.Equal(t, original, resultfp, "expected %s got %s", original, resultfp)
-
-	if err := os.Remove(p.FileName()); err != nil {
-		t.Errorf("failed to remove of result file: %s", err)
-	}
-
-	fmt.Fprintf(os.Stdout, "bind_test Done\n\n")
+		cmpFileChecksum(t, "_testdata/test.tar.gz", filepath.Join(tmpdir, cfg.Filename))
+	})
 }
 
 func get2md5(path string) (string, error) {
@@ -160,4 +116,22 @@ func get2md5(path string) (string, error) {
 	bytes := hash.Sum(nil)[:16]
 
 	return hex.EncodeToString(bytes), nil
+}
+
+func cmpFileChecksum(t *testing.T, wantPath, gotPath string) {
+	t.Helper()
+	want, err := get2md5(wantPath)
+
+	if err != nil {
+		t.Fatalf("failed to md5sum of original file: %s", err)
+	}
+
+	resultfp, err := get2md5(gotPath)
+	if err != nil {
+		t.Fatalf("failed to md5sum of result file: %s", err)
+	}
+
+	if want != resultfp {
+		t.Errorf("expected %s got %s", want, resultfp)
+	}
 }

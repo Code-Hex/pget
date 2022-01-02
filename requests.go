@@ -2,231 +2,150 @@ package pget
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"net/http"
-	"os"
+	"path"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/net/context/ctxhttp"
 	"golang.org/x/sync/errgroup"
 )
 
 // Range struct for range access
 type Range struct {
-	low    uint
-	high   uint
-	worker uint
+	low  int64
+	high int64
 }
 
 func isNotLastURL(url, purl string) bool {
 	return url != purl && url != ""
 }
 
-func isLastProc(i, procs uint) bool {
-	return i == procs-1
+// CheckConfig is a configuration to check download target.
+type CheckConfig struct {
+	URLs           []string
+	Timeout        time.Duration
+	DisableLogging bool
 }
 
-// Checking is check to can request
-func (p *Pget) Checking() error {
-
-	ctx, cancelAll := context.WithTimeout(context.Background(), time.Duration(p.timeout)*time.Second)
-
-	ch := MakeCh()
-	defer ch.Close()
-
-	for _, url := range p.URLs {
-		fmt.Fprintf(os.Stdout, "Checking now %s\n", url)
-		go p.CheckMirrors(ctx, url, ch)
-	}
-
-	// listen for error or size channel
-	size, err := ch.CheckingListen(ctx, cancelAll, len(p.URLs))
-	if err != nil {
-		return err
-	}
-
-	// did already get filename from -o option
-	filename := p.Utils.FileName()
-	if filename == "" {
-		filename = p.Utils.URLFileName(p.TargetDir, p.TargetURLs[0])
-	}
-	p.SetFileName(filename)
-	p.SetFullFileName(p.TargetDir, filename)
-	p.Utils.SetDirName(p.TargetDir, filename, p.Procs)
-
-	p.SetFileSize(size)
-
-	return nil
+// Target represensts download target.
+type Target struct {
+	Filename      string
+	ContentLength int64
+	URLs          []string
 }
 
-// CheckMirrors method check be able to range access. also get redirected url.
-func (p *Pget) CheckMirrors(ctx context.Context, url string, ch *Ch) {
+// Check checks be able to download from targets
+func Check(ctx context.Context, c *CheckConfig) (*Target, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.Timeout)
+	defer cancel()
 
-	res, err := ctxhttp.Head(ctx, http.DefaultClient, url)
-	if err != nil {
-		ch.Err <- errors.Wrap(err, "failed to head request: "+url)
-		return
+	if len(c.URLs) == 0 {
+		return nil, errors.New("invalid target URL is zero")
 	}
 
-	if res.Header.Get("Accept-Ranges") != "bytes" {
-		ch.Err <- errors.Errorf("not supported range access: %s", url)
-		return
+	infos, err := getMirrorInfos(ctx, c.URLs)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := checkEachContent(infos); err != nil {
+		return nil, err
+	}
+
+	urls := make([]string, len(infos))
+	for i, info := range infos {
+		urls[i] = info.RetrievedURL
+	}
+
+	return &Target{
+		Filename:      path.Base(infos[0].RetrievedURL),
+		ContentLength: infos[0].ContentLength,
+		URLs:          urls,
+	}, nil
+}
+
+func getMirrorInfos(ctx context.Context, urls []string) ([]*mirrorInfo, error) {
+	var mu sync.Mutex
+	eg, ctx := errgroup.WithContext(ctx)
+
+	infos := make([]*mirrorInfo, 0, len(urls))
+
+	for _, url := range urls {
+		url := url
+		eg.Go(func() error {
+			info, err := getMirrorInfo(ctx, url)
+			if err != nil {
+				return err
+			}
+
+			mu.Lock()
+			infos = append(infos, info)
+			mu.Unlock()
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return nil, err
+	}
+
+	return infos, nil
+}
+
+type mirrorInfo struct {
+	RetrievedURL  string
+	ContentLength int64
+}
+
+func getMirrorInfo(ctx context.Context, url string) (*mirrorInfo, error) {
+	req, err := http.NewRequest("HEAD", url, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to make head request: %q", url)
+	}
+	req = req.WithContext(ctx)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to head request: %q", url)
+	}
+
+	if resp.Header.Get("Accept-Ranges") != "bytes" {
+		return nil, errors.Errorf("does not support range request: %q", url)
+	}
+
+	if resp.ContentLength <= 0 {
+		return nil, errors.New("invalid content length")
 	}
 
 	// To perform with the correct "range access"
 	// get the last url in the redirect
-	_url := res.Request.URL.String()
+	_url := resp.Request.URL.String()
 	if isNotLastURL(_url, url) {
-		p.TargetURLs = append(p.TargetURLs, _url)
-	} else {
-		p.TargetURLs = append(p.TargetURLs, url)
+		return &mirrorInfo{
+			RetrievedURL:  _url,
+			ContentLength: resp.ContentLength,
+		}, nil
 	}
 
-	// get of ContentLength
-	if res.ContentLength <= 0 {
-		ch.Err <- errors.New("invalid content length")
-		return
-	}
-	ch.Size <- uint(res.ContentLength)
+	return &mirrorInfo{
+		RetrievedURL:  url,
+		ContentLength: resp.ContentLength,
+	}, nil
 }
 
-// Download method distributes the task to each goroutine for each URL
-func (p *Pget) Download() error {
-
-	procs := uint(p.Procs)
-
-	filesize := p.FileSize()
-	dirname := p.DirName()
-
-	// create download location
-	if err := os.MkdirAll(dirname, 0755); err != nil {
-		return errors.Wrap(err, "failed to mkdir for download location")
-	}
-
-	// calculate split file size
-	split := filesize / procs
-
-	if err := p.Utils.IsFree(split); err != nil {
-		return err
-	}
-
-	grp, ctx := errgroup.WithContext(context.Background())
-
-	// on an assignment for request
-	p.Assignment(grp, procs, split)
-
-	if err := p.Utils.ProgressBar(ctx); err != nil {
-		return err
-	}
-
-	// wait for Assignment method
-	if err := grp.Wait(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Assignment method that to each goroutine gives the task
-func (p Pget) Assignment(grp *errgroup.Group, procs, split uint) {
-	filename := p.FileName()
-	dirname := p.DirName()
-
-	assignment := uint(p.Procs / len(p.TargetURLs))
-
-	var lasturl string
-	totalActiveProcs := uint(0)
-	for i := uint(0); i < procs; i++ {
-		partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, procs, i)
-
-		// make range
-		r := p.Utils.MakeRange(i, split, procs)
-
-		if info, err := os.Stat(partName); err == nil {
-			infosize := uint(info.Size())
-			// check if the part is fully downloaded
-			if isLastProc(i, procs) {
-				if infosize == r.high-r.low {
-					continue
-				}
-			} else if infosize == split {
-				// skip as the part is already downloaded
-				continue
-			}
-
-			// make low range from this next byte
-			r.low += infosize
+// check contents are the same on each mirrors
+func checkEachContent(infos []*mirrorInfo) error {
+	var contentLength int64
+	for _, info := range infos {
+		if contentLength == 0 {
+			contentLength = info.ContentLength
+			continue
 		}
-
-		totalActiveProcs++
-
-		url := p.TargetURLs[0]
-
-		// give efficiency and equality work
-		if totalActiveProcs%assignment == 0 {
-			// Like shift method
-			if len(p.TargetURLs) > 1 {
-				p.TargetURLs = p.TargetURLs[1:]
-			}
-
-			// check whether to output the message
-			if lasturl != url {
-				fmt.Fprintf(os.Stdout, "Download start from %s\n", url)
-				lasturl = url
-			}
+		if contentLength != info.ContentLength {
+			return errors.New("does not match content length on each mirrors")
 		}
-
-		// execute get request
-		grp.Go(func() error {
-			return p.Requests(r, filename, dirname, url)
-		})
 	}
-}
-
-// Requests method will download the file
-func (p Pget) Requests(r Range, filename, dirname, url string) error {
-
-	res, err := p.MakeResponse(r, url) // ctxhttp
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to split get requests: %d", r.worker))
-	}
-	defer res.Body.Close()
-
-	partName := fmt.Sprintf("%s/%s.%d.%d", dirname, filename, p.Procs, r.worker)
-
-	output, err := os.OpenFile(partName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to create %s in %s", filename, dirname))
-	}
-	defer output.Close()
-
-	io.Copy(output, res.Body)
-
 	return nil
-}
-
-// MakeResponse return *http.Response include context and range header
-func (p Pget) MakeResponse(r Range, url string) (*http.Response, error) {
-	// create get request
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("failed to split NewRequest for get: %d", r.worker))
-	}
-
-	// set download ranges
-	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", r.low, r.high))
-
-	// set useragent
-	if p.useragent != "" {
-		req.Header.Set("User-Agent", p.useragent)
-	}
-
-	// set referer
-	if p.referer != "" {
-		req.Header.Set("Referer", p.referer)
-	}
-
-	return http.DefaultClient.Do(req)
 }

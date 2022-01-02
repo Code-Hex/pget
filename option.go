@@ -3,7 +3,6 @@ package pget
 import (
 	"bytes"
 	"fmt"
-	"os"
 
 	"github.com/Code-Hex/updater"
 	"github.com/jessevdk/go-flags"
@@ -15,7 +14,6 @@ type Options struct {
 	Help      bool   `short:"h" long:"help"`
 	Procs     int    `short:"p" long:"procs"`
 	Output    string `short:"o" long:"output"`
-	TargetDir string `short:"d" long:"target-dir"`
 	Timeout   int    `short:"t" long:"timeout"`
 	UserAgent string `short:"u" long:"user-agent"`
 	Referer   string `short:"r" long:"referer"`
@@ -28,7 +26,7 @@ func (opts *Options) parse(argv []string, version string) ([]string, error) {
 	args, err := p.ParseArgs(argv)
 
 	if err != nil {
-		os.Stderr.Write(opts.usage(version))
+		stdout.Write(opts.usage(version))
 		return nil, errors.Wrap(err, "invalid command line options")
 	}
 
@@ -38,14 +36,13 @@ func (opts *Options) parse(argv []string, version string) ([]string, error) {
 func (opts Options) usage(version string) []byte {
 	buf := bytes.Buffer{}
 
-	msg := "Pget %s, parallel file download client\n"
+	msg := "Pget %s, The fastest file download client\n"
 	fmt.Fprintf(&buf, msg+
 		`Usage: pget [options] URL
   Options:
   -h,  --help                   print usage and exit
   -p,  --procs <num>            split ratio to download file
   -o,  --output <filename>      output file to <filename>
-  -d,  --target-dir <path>    	path to the directory to save the downloaded file, filename will be taken from url
   -t,  --timeout <seconds>      timeout of checking request in seconds
   -u,  --user-agent <agent>     identify as <agent>
   -r,  --referer <referer>      identify as <referer>

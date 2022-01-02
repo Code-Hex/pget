@@ -2,10 +2,13 @@ package pget
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
@@ -13,82 +16,80 @@ import (
 
 // Pget structs
 type Pget struct {
-	Trace bool
-	Utils
-	TargetDir  string
-	Procs      int
-	URLs       []string
-	TargetURLs []string
-	args       []string
-	timeout    int
-	useragent  string
-	referer    string
-}
+	Trace  bool
+	Output string
+	Procs  int
+	URLs   []string
 
-type ignore struct {
-	err error
-}
-
-type cause interface {
-	Cause() error
+	args      []string
+	timeout   int
+	useragent string
+	referer   string
 }
 
 // New for pget package
 func New() *Pget {
 	return &Pget{
 		Trace:   false,
-		Utils:   &Data{},
 		Procs:   runtime.NumCPU(), // default
 		timeout: 10,
 	}
 }
 
-// ErrTop get important message from wrapped error message
-func (pget Pget) ErrTop(err error) error {
-	for e := err; e != nil; {
-		switch e.(type) {
-		case ignore:
-			return nil
-		case cause:
-			e = e.(cause).Cause()
-		default:
-			return e
+// Run execute methods in pget package
+func (pget *Pget) Run(ctx context.Context, version string, args []string) error {
+	if err := pget.Ready(version, args); err != nil {
+		return errTop(err)
+	}
+
+	target, err := Check(ctx, &CheckConfig{
+		URLs:    pget.URLs,
+		Timeout: time.Duration(pget.timeout) * time.Second,
+	})
+	if err != nil {
+		return err
+	}
+
+	filename := target.Filename
+
+	var dir string
+	if pget.Output != "" {
+		fi, err := os.Stat(pget.Output)
+		if err == nil && fi.IsDir() {
+			dir = pget.Output
+		} else {
+			dir, filename = filepath.Split(pget.Output)
+			if dir != "" {
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					return errors.Wrapf(err, "failed to create diretory at %s", dir)
+				}
+			}
 		}
 	}
 
-	return nil
-}
-
-// Run execute methods in pget package
-func (pget *Pget) Run(version string) error {
-	if err := pget.Ready(version); err != nil {
-		return pget.ErrTop(err)
+	opts := []DownloadOption{
+		WithUserAgent(pget.useragent),
+		WithReferer(pget.referer),
 	}
 
-	if err := pget.Checking(); err != nil {
-		return errors.Wrap(err, "failed to check header")
-	}
-
-	if err := pget.Download(); err != nil {
-		return err
-	}
-
-	if err := pget.Utils.BindwithFiles(pget.Procs); err != nil {
-		return err
-	}
-
-	return nil
+	return Download(ctx, &DownloadConfig{
+		Filename:      filename,
+		Dirname:       dir,
+		ContentLength: target.ContentLength,
+		Procs:         pget.Procs,
+		URLs:          target.URLs,
+	}, opts...)
 }
 
 // Ready method define the variables required to Download.
-func (pget *Pget) Ready(version string) error {
+func (pget *Pget) Ready(version string, args []string) error {
 	if procs := os.Getenv("GOMAXPROCS"); procs == "" {
 		runtime.GOMAXPROCS(pget.Procs)
 	}
 
-	opts, err := pget.parseOptions(os.Args[1:], version)
+	opts, err := pget.parseOptions(args, version)
 	if err != nil {
-		return errors.Wrap(err, "failed to parse command line args")
+		return errors.Wrap(errTop(err), "failed to parse command line args")
 	}
 
 	if opts.Trace {
@@ -108,7 +109,7 @@ func (pget *Pget) Ready(version string) error {
 	}
 
 	if opts.Output != "" {
-		pget.Utils.SetFileName(opts.Output)
+		pget.Output = opts.Output
 	}
 
 	if opts.UserAgent != "" {
@@ -119,47 +120,14 @@ func (pget *Pget) Ready(version string) error {
 		pget.referer = opts.Referer
 	}
 
-	if opts.TargetDir != "" {
-		info, err := os.Stat(opts.TargetDir)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				return errors.Wrap(err, "target dir is invalid")
-			}
-
-			if err := os.MkdirAll(opts.TargetDir, 0755); err != nil {
-				return errors.Wrapf(err, "failed to create diretory at %s", opts.TargetDir)
-			}
-
-		} else if !info.IsDir() {
-			return errors.New("target dir is not a valid directory")
-		}
-		opts.TargetDir = strings.TrimSuffix(opts.TargetDir, "/")
-	}
-	pget.TargetDir = opts.TargetDir
-
 	return nil
-}
-
-func (pget Pget) makeIgnoreErr() ignore {
-	return ignore{
-		err: errors.New("this is ignore message"),
-	}
-}
-
-// Error for options: version, usage
-func (i ignore) Error() string {
-	return i.err.Error()
-}
-
-func (i ignore) Cause() error {
-	return i.err
 }
 
 func (pget *Pget) parseOptions(argv []string, version string) (*Options, error) {
 	var opts Options
 	if len(argv) == 0 {
-		os.Stdout.Write(opts.usage(version))
-		return nil, pget.makeIgnoreErr()
+		stdout.Write(opts.usage(version))
+		return nil, makeIgnoreErr()
 	}
 
 	o, err := opts.parse(argv, version)
@@ -168,8 +136,8 @@ func (pget *Pget) parseOptions(argv []string, version string) (*Options, error) 
 	}
 
 	if opts.Help {
-		os.Stdout.Write(opts.usage(version))
-		return nil, pget.makeIgnoreErr()
+		stdout.Write(opts.usage(version))
+		return nil, makeIgnoreErr()
 	}
 
 	if opts.Update {
@@ -178,8 +146,8 @@ func (pget *Pget) parseOptions(argv []string, version string) (*Options, error) 
 			return nil, errors.Wrap(err, "failed to parse command line options")
 		}
 
-		os.Stdout.Write(result)
-		return nil, pget.makeIgnoreErr()
+		stdout.Write(result)
+		return nil, makeIgnoreErr()
 	}
 
 	pget.args = o
@@ -197,8 +165,8 @@ func (pget *Pget) parseURLs() error {
 	}
 
 	if len(pget.URLs) < 1 {
-		fmt.Fprintf(os.Stdout, "Please input url separate with space or newline\n")
-		fmt.Fprintf(os.Stdout, "Start download at ^D\n")
+		fmt.Fprintf(stdout, "Please input url separate with space or newline\n")
+		fmt.Fprintf(stdout, "Start download at ^D\n")
 
 		// scanning url from stdin
 		scanner := bufio.NewScanner(os.Stdin)

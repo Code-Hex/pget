@@ -2,24 +2,26 @@ package pget
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/mholt/archiver"
 )
 
-func TestRun(t *testing.T) {
+func TestRunResume(t *testing.T) {
 	// listening file server
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/file.name", func(w http.ResponseWriter, r *http.Request) {
-		fp := "_testdata/test.tar.gz"
+		fp := filepath.Join("_testdata", "test.tar.gz")
 		data, err := ioutil.ReadFile(fp)
 		if err != nil {
 			t.Errorf("failed to readfile: %s", err)
@@ -28,62 +30,47 @@ func TestRun(t *testing.T) {
 	})
 
 	ts := httptest.NewServer(mux)
-	defer ts.Close()
+	t.Cleanup(ts.Close)
 
 	url := ts.URL
+	targetURL := fmt.Sprintf("%s/%s", url, "file.name")
+	tmpDir := t.TempDir()
 
-	os.Args = []string{
-		"pget",
-		"-p",
-		"3",
-		fmt.Sprintf("%s/%s", url, "file.name"),
-		"--timeout",
-		"5",
+	// resume.tar.gz is included resumable file structures.
+	// _file.name.3
+	// ├── file.name.3.0
+	// ├── file.name.3.1
+	// └── file.name.3.2
+	resumeFilePath := filepath.Join(tmpDir, "resume.tar.gz")
+	if err := copy(
+		filepath.Join("_testdata", "resume.tar.gz"),
+		resumeFilePath,
+	); err != nil {
+		t.Fatalf("failed to copy: %s", err)
 	}
 
-	if err := copy("_testdata/resume.tar.gz", "resume.tar.gz"); err != nil {
-		t.Errorf("failed to copy: %s", err)
-	}
-
-	if err := archiver.NewTarGz().Unarchive("resume.tar.gz", "."); err != nil {
-		t.Errorf("failed to untargz: %s", err)
+	if err := archiver.NewTarGz().Unarchive(resumeFilePath, tmpDir); err != nil {
+		t.Fatalf("failed to untargz: %s", err)
 	}
 
 	p := New()
-	if err := p.Run(version); err != nil {
-		t.Errorf("failed to Run: %s", err)
-	}
-
-	if err := os.Remove("resume.tar.gz"); err != nil {
-		t.Errorf("failed to remove of test file: %s", err)
-	}
-
-	if err := os.Remove(p.FileName()); err != nil {
-		t.Errorf("failed to remove of result file: %s", err)
-	}
-	fmt.Fprintf(os.Stdout, "Done\n")
-	fmt.Fprintf(os.Stdout, "Second\n")
-
-	os.Args = []string{
+	if err := p.Run(context.Background(), version, []string{
 		"pget",
-		fmt.Sprintf("%s/%s", url, "file.name"),
-		"-d",
-		"./target_dir",
-		"--trace",
-	}
-
-	if err := p.Run(version); err != nil {
+		"-p",
+		"3",
+		targetURL,
+		"--timeout",
+		"5",
+		"--output",
+		tmpDir,
+	}); err != nil {
 		t.Errorf("failed to Run: %s", err)
 	}
 
-	// check exist file
-	if _, err := os.Stat("./target_dir"); os.IsNotExist(err) {
-		t.Errorf("failed to output to destination")
-	}
-
-	if err := os.RemoveAll("./target_dir"); err != nil {
-		t.Errorf("failed to remove of result file: %s", err)
-	}
+	cmpFileChecksum(t,
+		filepath.Join("_testdata", "test.tar.gz"),
+		filepath.Join(tmpDir, "file.name"),
+	)
 }
 
 func copy(src, dest string) error {

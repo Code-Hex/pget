@@ -1,8 +1,6 @@
 package pget
 
 import (
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,9 +9,7 @@ import (
 const version = "test_version"
 
 func TestParts_of_ready(t *testing.T) {
-
 	// begin test
-	fmt.Fprintf(os.Stdout, "Testing parse_test\n")
 	url := "http://example.com/filename.tar.gz"
 
 	args := []string{
@@ -22,6 +18,8 @@ func TestParts_of_ready(t *testing.T) {
 		"2",
 		url,
 		"--trace",
+		"--output",
+		"filename.tar.gz",
 	}
 
 	p := New()
@@ -32,22 +30,16 @@ func TestParts_of_ready(t *testing.T) {
 
 	assert.Equal(t, true, opts.Trace, "failed to parse arguments of trace")
 	assert.Equal(t, opts.Procs, 2, "failed to parse arguments of procs")
+	assert.Equal(t, "filename.tar.gz", opts.Output, "failed to parse output")
 
 	if err := p.parseURLs(); err != nil {
 		t.Errorf("failed to parse of url: %s", err)
 	}
 
-	filename := p.URLFileName(p.TargetDir, url)
-	p.SetFileName(filename)
-	assert.Equal(t, p.FileName(), "filename.tar.gz", "failed to get of filename from url")
-
-	fmt.Fprintf(os.Stdout, "parse_test Done\n\n")
+	assert.Len(t, p.URLs, 1)
 }
 
 func TestShowhelp(t *testing.T) {
-	// begin test
-	fmt.Fprintf(os.Stdout, "Testing showhelp_test\n")
-
 	args := []string{
 		"pget",
 		"-h",
@@ -65,14 +57,9 @@ func TestShowhelp(t *testing.T) {
 	p = New()
 	_, err = p.parseOptions(args, version)
 	assert.NotNil(t, err)
-
-	fmt.Fprintf(os.Stdout, "showhelp_test Done\n\n")
 }
 
 func TestShowisupdate(t *testing.T) {
-	// begin test
-	fmt.Fprintf(os.Stdout, "Testing showversion_test\n")
-
 	args := []string{
 		"pget",
 		"--check-update",
@@ -81,6 +68,4 @@ func TestShowisupdate(t *testing.T) {
 	p := New()
 	_, err := p.parseOptions(args, version)
 	assert.NotNil(t, err)
-
-	fmt.Fprintf(os.Stdout, "showversion_test Done\n\n")
 }

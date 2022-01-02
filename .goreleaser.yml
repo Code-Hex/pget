@@ -1,0 +1,78 @@
+builds:
+  - id: pget
+    main: ./cmd/pget/main.go
+    binary: pget
+    env:
+      - CGO_ENABLED=0
+    ldflags: -s -w -X main.version={{.Version}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - "386"
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - "6"
+      - "7"
+    ignore:
+      - goos: darwin
+        goarch: "386"
+      - goos: linux
+        goarch: arm
+        goarm: "7"
+      - goos: windows
+        goarch: arm
+        goarm: "7"
+
+archives:
+- builds:
+  - pget
+  name_template: 'pget_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+  replacements:
+    darwin: macOS
+    linux: Linux
+    windows: Windows
+    386: i386
+    amd64: x86_64
+  format_overrides:
+  - goos: windows
+    format: zip
+  files:
+  - LICENSE
+
+brews:
+- name: pget
+  tap:
+    owner: Code-Hex
+    name: homebrew-tap
+    token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+  homepage: https://github.com/Code-Hex/pget
+  description: The fastest file download client
+  folder: Formula
+  install: |
+    bin.install "pget"
+nfpms:
+  - license: MIT License
+    maintainer: Kei Kamikawa <x00.x7f.x86@gmail.com>
+    homepage: https://github.com/Code-Hex/pget
+    bindir: /usr/local/bin
+    description: The fastest file download client
+    formats:
+      - apk
+      - deb
+      - rpm
+
+checksum:
+  name_template: 'pget_checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+    - Merge pull request
+    - Merge branch
