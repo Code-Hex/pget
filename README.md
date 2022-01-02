@@ -75,7 +75,12 @@ pget -p 6   10.54s user 34.52s system 25% cpu 2:56.93 total
 ```
 
 ## Binary
+
 You can download from [here](https://github.com/Code-Hex/pget/releases)
+
+## Disclaimer
+
+This program comes with no warranty. You must use this program at your own risk.
 
 ## Author
 
