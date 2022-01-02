@@ -36,7 +36,7 @@ func (opts *Options) parse(argv []string, version string) ([]string, error) {
 func (opts Options) usage(version string) []byte {
 	buf := bytes.Buffer{}
 
-	msg := "Pget %s, parallel file download client\n"
+	msg := "Pget %s, The fastest file download client\n"
 	fmt.Fprintf(&buf, msg+
 		`Usage: pget [options] URL
   Options:
