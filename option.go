@@ -3,7 +3,6 @@ package pget
 import (
 	"bytes"
 	"fmt"
-	"os"
 
 	"github.com/Code-Hex/updater"
 	"github.com/jessevdk/go-flags"
@@ -27,7 +26,7 @@ func (opts *Options) parse(argv []string, version string) ([]string, error) {
 	args, err := p.ParseArgs(argv)
 
 	if err != nil {
-		os.Stderr.Write(opts.usage(version))
+		stdout.Write(opts.usage(version))
 		return nil, errors.Wrap(err, "invalid command line options")
 	}
 

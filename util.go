@@ -54,7 +54,7 @@ func (r Range) BytesRange() string {
 }
 
 func ProgressBar(ctx context.Context, contentLength int64, dirname string) error {
-	bar := pb.Start64(contentLength)
+	bar := pb.Start64(contentLength).SetWriter(stdout).Set(pb.Bytes, true)
 
 	for {
 		select {

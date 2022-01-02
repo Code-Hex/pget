@@ -126,7 +126,7 @@ func (pget *Pget) Ready(version string, args []string) error {
 func (pget *Pget) parseOptions(argv []string, version string) (*Options, error) {
 	var opts Options
 	if len(argv) == 0 {
-		os.Stdout.Write(opts.usage(version))
+		stdout.Write(opts.usage(version))
 		return nil, makeIgnoreErr()
 	}
 
@@ -136,7 +136,7 @@ func (pget *Pget) parseOptions(argv []string, version string) (*Options, error) 
 	}
 
 	if opts.Help {
-		os.Stdout.Write(opts.usage(version))
+		stdout.Write(opts.usage(version))
 		return nil, makeIgnoreErr()
 	}
 
@@ -146,7 +146,7 @@ func (pget *Pget) parseOptions(argv []string, version string) (*Options, error) 
 			return nil, errors.Wrap(err, "failed to parse command line options")
 		}
 
-		os.Stdout.Write(result)
+		stdout.Write(result)
 		return nil, makeIgnoreErr()
 	}
 
@@ -165,8 +165,8 @@ func (pget *Pget) parseURLs() error {
 	}
 
 	if len(pget.URLs) < 1 {
-		fmt.Fprintf(os.Stdout, "Please input url separate with space or newline\n")
-		fmt.Fprintf(os.Stdout, "Start download at ^D\n")
+		fmt.Fprintf(stdout, "Please input url separate with space or newline\n")
+		fmt.Fprintf(stdout, "Start download at ^D\n")
 
 		// scanning url from stdin
 		scanner := bufio.NewScanner(os.Stdin)

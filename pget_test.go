@@ -18,6 +18,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMain(m *testing.M) {
+	stdout = ioutil.Discard
+	os.Exit(m.Run())
+}
+
 func TestPget(t *testing.T) {
 	// listening file server
 	mux := http.NewServeMux()

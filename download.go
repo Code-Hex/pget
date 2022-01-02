@@ -210,7 +210,7 @@ func (t *Task) download(req *http.Request) error {
 }
 
 func bindFiles(c *DownloadConfig, partialDir string) error {
-	fmt.Println("\nbinding with files...")
+	fmt.Fprintln(stdout, "\nbinding with files...")
 
 	destPath := filepath.Join(c.Dirname, c.Filename)
 	f, err := os.Create(destPath)
@@ -219,7 +219,7 @@ func bindFiles(c *DownloadConfig, partialDir string) error {
 	}
 	defer f.Close()
 
-	bar := pb.Start64(c.ContentLength)
+	bar := pb.Start64(c.ContentLength).SetWriter(stdout)
 
 	copyFn := func(name string) error {
 		subfp, err := os.Open(name)
