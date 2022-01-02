@@ -1,4 +1,4 @@
-Pget - parallel file download client
+Pget - The fastest file download client
 =======
 
 ![test](https://github.com/Code-Hex/pget/workflows/test/badge.svg)
@@ -16,8 +16,8 @@ Download using a parallel requests
 
 ### Homebrew
 
-	brew tap Code-Hex/pget
-	brew install pget
+	brew update
+	brew install Code-Hex/tap/pget
 
 ### go get
 Install
@@ -51,7 +51,6 @@ You can do this
   -h,  --help                   print usage and exit
   -p,  --procs <num>            split ratio to download file
   -o,  --output <filename>      output file to <filename>
-  -d,  --target-dir <path>      path to the directory to save the downloaded file, filename will be taken from url
   -t,  --timeout <seconds>      timeout of checking request in seconds
   -u,  --user-agent <agent>     identify as <agent>
   -r,  --referer <referer>      identify as <referer>
@@ -61,12 +60,12 @@ You can do this
 
 ## Pget vs Wget
 
-URL: http://ubuntutym2.u-toyama.ac.jp/ubuntu/16.04/ubuntu-16.04-desktop-amd64.iso
+URL: https://mirror.internet.asn.au/pub/ubuntu/releases/21.10/ubuntu-21.10-desktop-amd64.iso
 
 Using
 ```
-time wget http://ubuntutym2.u-toyama.ac.jp/ubuntu/16.04/ubuntu-16.04-desktop-amd64.iso
-time pget -p 6 http://ubuntutym2.u-toyama.ac.jp/ubuntu/16.04/ubuntu-16.04-desktop-amd64.iso
+time wget https://mirror.internet.asn.au/pub/ubuntu/releases/21.10/ubuntu-21.10-desktop-amd64.iso
+time pget -p 6 https://mirror.internet.asn.au/pub/ubuntu/releases/21.10/ubuntu-21.10-desktop-amd64.iso
 ```
 Results
 
