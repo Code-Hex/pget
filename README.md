@@ -8,9 +8,15 @@ Pget - The fastest file download client
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 ## Description
 
-Download using a parallel requests
+Multi-Connection Download using parallel requests.
 
-[![asciicast](https://asciinema.org/a/a505e9fpkdpd7ycefyjs3h5bb.png)](https://asciinema.org/a/a505e9fpkdpd7ycefyjs3h5bb)
+- Fast
+- Resumable
+- Cross-compiled (windows, linux, macOS)
+
+This is an example to download [linux kernel](https://www.kernel.org/). It will be finished between 15s.
+
+![pget](https://user-images.githubusercontent.com/6500104/147878414-321c57ad-cff2-40f3-b2a4-12c30ff1363f.gif)
 
 ## Installation
 
@@ -19,14 +25,11 @@ Download using a parallel requests
 	brew update
 	brew install Code-Hex/tap/pget
 
-### go get
+### Go
+
 Install
 
-    $ go get github.com/Code-Hex/pget/cmd/pget
-
-Update
-
-    $ go get -u github.com/Code-Hex/pget/cmd/pget
+    $ go install github.com/Code-Hex/pget/cmd/pget@latest
 
 ## Synopsis
 
@@ -73,6 +76,8 @@ Results
 wget   3.92s user 23.52s system 3% cpu 13:35.24 total
 pget -p 6   10.54s user 34.52s system 25% cpu 2:56.93 total
 ```
+
+`wget` 13:35.24 total, `pget -p 6` **2:56.93 total (6x faster)**
 
 ## Binary
 
