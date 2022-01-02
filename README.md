@@ -1,7 +1,7 @@
 Pget - The fastest file download client
 =======
 
-![test](https://github.com/Code-Hex/pget/workflows/test/badge.svg)
+[![.github/workflows/main.yaml](https://github.com/Code-Hex/pget/actions/workflows/main.yaml/badge.svg)](https://github.com/Code-Hex/pget/actions/workflows/main.yaml)
 [![codecov](https://codecov.io/gh/Code-Hex/pget/branch/master/graph/badge.svg?token=jUVGnY7ZlG)](undefined)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Code-Hex/pget)](https://goreportcard.com/report/github.com/Code-Hex/pget)
 [![GitHub release](https://img.shields.io/github/release/Code-Hex/pget.svg)](https://github.com/Code-Hex/pget)
