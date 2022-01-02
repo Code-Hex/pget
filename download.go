@@ -13,7 +13,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type AssignmentConfig struct {
+type assignTasksConfig struct {
 	Procs         int
 	TaskSize      int64 // download filesize per task
 	ContentLength int64 // full download filesize
@@ -22,7 +22,7 @@ type AssignmentConfig struct {
 	Filename      string
 }
 
-type Task struct {
+type task struct {
 	ID         int
 	Procs      int
 	URL        string
@@ -31,14 +31,14 @@ type Task struct {
 	Filename   string
 }
 
-func (t *Task) destPath() string {
+func (t *task) destPath() string {
 	return filepath.Join(
 		t.PartialDir,
 		fmt.Sprintf("%s.%d.%d", t.Filename, t.Procs, t.ID),
 	)
 }
 
-func (t *Task) String() string {
+func (t *task) String() string {
 	return fmt.Sprintf("task[%d]: %q", t.ID, t.destPath())
 }
 
@@ -47,7 +47,7 @@ type makeRequestOption struct {
 	referer   string
 }
 
-func (t *Task) makeRequest(ctx context.Context, opt *makeRequestOption) (*http.Request, error) {
+func (t *task) makeRequest(ctx context.Context, opt *makeRequestOption) (*http.Request, error) {
 	req, err := http.NewRequest("GET", t.URL, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to make a new request: %d", t.ID))
@@ -70,9 +70,9 @@ func (t *Task) makeRequest(ctx context.Context, opt *makeRequestOption) (*http.R
 	return req, nil
 }
 
-// Assignment method that to each goroutine gives the task
-func Assignment(c *AssignmentConfig) []*Task {
-	tasks := make([]*Task, 0, c.Procs)
+// assignTasks creates task to assign it to each goroutines
+func assignTasks(c *assignTasksConfig) []*task {
+	tasks := make([]*task, 0, c.Procs)
 
 	var totalActiveProcs int
 	for i := 0; i < c.Procs; i++ {
@@ -100,7 +100,7 @@ func Assignment(c *AssignmentConfig) []*Task {
 			r.low += infosize
 		}
 
-		tasks = append(tasks, &Task{
+		tasks = append(tasks, &task{
 			ID:         i,
 			Procs:      c.Procs,
 			URL:        c.URLs[totalActiveProcs%len(c.URLs)],
@@ -141,6 +141,7 @@ func WithReferer(referer string) DownloadOption {
 
 func Download(ctx context.Context, c *DownloadConfig, opts ...DownloadOption) error {
 	partialDir := getPartialDirname(c.Dirname, c.Filename, c.Procs)
+
 	// create download location
 	if err := os.MkdirAll(partialDir, 0755); err != nil {
 		return errors.Wrap(err, "failed to mkdir for download location")
@@ -152,7 +153,7 @@ func Download(ctx context.Context, c *DownloadConfig, opts ...DownloadOption) er
 		opt(c)
 	}
 
-	tasks := Assignment(&AssignmentConfig{
+	tasks := assignTasks(&assignTasksConfig{
 		Procs:         c.Procs,
 		TaskSize:      c.ContentLength / int64(c.Procs),
 		ContentLength: c.ContentLength,
@@ -161,21 +162,33 @@ func Download(ctx context.Context, c *DownloadConfig, opts ...DownloadOption) er
 		Filename:      c.Filename,
 	})
 
-	if err := parallelDownload(ctx, c, tasks); err != nil {
+	if err := parallelDownload(ctx, &parallelDownloadConfig{
+		ContentLength:     c.ContentLength,
+		Tasks:             tasks,
+		PartialDir:        partialDir,
+		makeRequestOption: c.makeRequestOption,
+	}); err != nil {
 		return err
 	}
 
 	return bindFiles(c, partialDir)
 }
 
-func parallelDownload(ctx context.Context, c *DownloadConfig, tasks []*Task) error {
+type parallelDownloadConfig struct {
+	ContentLength int64
+	Tasks         []*task
+	PartialDir    string
+	*makeRequestOption
+}
+
+func parallelDownload(ctx context.Context, c *parallelDownloadConfig) error {
 	eg, ctx := errgroup.WithContext(ctx)
 
 	eg.Go(func() error {
-		return ProgressBar(ctx, c.ContentLength, c.Dirname)
+		return progressBar(ctx, c.ContentLength, c.PartialDir)
 	})
 
-	for _, task := range tasks {
+	for _, task := range c.Tasks {
 		task := task
 		eg.Go(func() error {
 			req, err := task.makeRequest(ctx, c.makeRequestOption)
@@ -189,7 +202,7 @@ func parallelDownload(ctx context.Context, c *DownloadConfig, tasks []*Task) err
 	return eg.Wait()
 }
 
-func (t *Task) download(req *http.Request) error {
+func (t *task) download(req *http.Request) error {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get response: %q", t.String())

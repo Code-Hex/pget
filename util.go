@@ -53,8 +53,9 @@ func (r Range) BytesRange() string {
 	return fmt.Sprintf("bytes=%d-%d", r.low, r.high)
 }
 
-func ProgressBar(ctx context.Context, contentLength int64, dirname string) error {
+func progressBar(ctx context.Context, contentLength int64, dirname string) error {
 	bar := pb.Start64(contentLength).SetWriter(stdout).Set(pb.Bytes, true)
+	defer bar.Finish()
 
 	for {
 		select {
@@ -70,7 +71,6 @@ func ProgressBar(ctx context.Context, contentLength int64, dirname string) error
 				bar.SetCurrent(size)
 			} else {
 				bar.SetCurrent(contentLength)
-				bar.Finish()
 				return nil
 			}
 		}
