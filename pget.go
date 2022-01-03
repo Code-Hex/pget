@@ -166,7 +166,7 @@ func (pget *Pget) parseURLs() error {
 
 	if len(pget.URLs) < 1 {
 		fmt.Fprintf(stdout, "Please input url separate with space or newline\n")
-		fmt.Fprintf(stdout, "Start download at ^D\n")
+		fmt.Fprintf(stdout, "Start download with ^D\n")
 
 		// scanning url from stdin
 		scanner := bufio.NewScanner(os.Stdin)

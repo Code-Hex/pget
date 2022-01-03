@@ -41,7 +41,7 @@ func Check(ctx context.Context, c *CheckConfig) (*Target, error) {
 	defer cancel()
 
 	if len(c.URLs) == 0 {
-		return nil, errors.New("invalid target URL is zero")
+		return nil, errors.New("URL is required at least one")
 	}
 
 	infos, err := getMirrorInfos(ctx, c.URLs)
@@ -76,7 +76,7 @@ func getMirrorInfos(ctx context.Context, urls []string) ([]*mirrorInfo, error) {
 		eg.Go(func() error {
 			info, err := getMirrorInfo(ctx, url)
 			if err != nil {
-				return err
+				return errors.Wrap(err, url)
 			}
 
 			mu.Lock()
@@ -102,17 +102,17 @@ type mirrorInfo struct {
 func getMirrorInfo(ctx context.Context, url string) (*mirrorInfo, error) {
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to make head request: %q", url)
+		return nil, errors.Wrap(err, "failed to make head request")
 	}
 	req = req.WithContext(ctx)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to head request: %q", url)
+		return nil, errors.Wrap(err, "failed to head request")
 	}
 
 	if resp.Header.Get("Accept-Ranges") != "bytes" {
-		return nil, errors.Errorf("does not support range request: %q", url)
+		return nil, errors.New("does not support range request")
 	}
 
 	if resp.ContentLength <= 0 {
