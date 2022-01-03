@@ -60,6 +60,8 @@ nfpms:
     homepage: https://github.com/Code-Hex/pget
     bindir: /usr/local/bin
     description: The fastest file download client
+    replacements:
+      linux: Linux
     formats:
       - apk
       - deb
