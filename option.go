@@ -14,7 +14,7 @@ type Options struct {
 	Help      bool   `short:"h" long:"help"`
 	Procs     int    `short:"p" long:"procs"`
 	Output    string `short:"o" long:"output"`
-	Timeout   int    `short:"t" long:"timeout"`
+	Timeout   int    `short:"t" long:"timeout" default:"10"`
 	UserAgent string `short:"u" long:"user-agent"`
 	Referer   string `short:"r" long:"referer"`
 	Update    bool   `long:"check-update"`
@@ -43,7 +43,7 @@ func (opts Options) usage(version string) []byte {
   -h,  --help                   print usage and exit
   -p,  --procs <num>            split ratio to download file
   -o,  --output <filename>      output file to <filename>
-  -t,  --timeout <seconds>      timeout of checking request in seconds
+  -t,  --timeout <seconds>      timeout of checking request in seconds (default 10s)
   -u,  --user-agent <agent>     identify as <agent>
   -r,  --referer <referer>      identify as <referer>
   --check-update                check if there is update available
