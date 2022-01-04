@@ -18,7 +18,6 @@ func newDownloadClient(maxIdleConnsPerHost int) *http.Client {
 	tr.MaxIdleConns = 0 // no limit
 	tr.MaxIdleConnsPerHost = maxIdleConnsPerHost
 	tr.DisableCompression = true
-	tr.ForceAttemptHTTP2 = false
 	return &http.Client{
 		Transport: tr,
 	}

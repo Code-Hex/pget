@@ -189,9 +189,16 @@ type parallelDownloadConfig struct {
 func parallelDownload(ctx context.Context, c *parallelDownloadConfig) error {
 	eg, ctx := errgroup.WithContext(ctx)
 
-	eg.Go(func() error {
-		return progressBar(ctx, c.ContentLength, c.PartialDir)
-	})
+	bar := pb.Start64(c.ContentLength).SetWriter(stdout).Set(pb.Bytes, true)
+	defer bar.Finish()
+
+	// check file size already downloaded for resume
+	size, err := checkProgress(c.PartialDir)
+	if err != nil {
+		return errors.Wrap(err, "failed to get directory size")
+	}
+
+	bar.SetCurrent(size)
 
 	for _, task := range c.Tasks {
 		task := task
@@ -200,14 +207,14 @@ func parallelDownload(ctx context.Context, c *parallelDownloadConfig) error {
 			if err != nil {
 				return err
 			}
-			return task.download(req)
+			return task.download(req, bar)
 		})
 	}
 
 	return eg.Wait()
 }
 
-func (t *task) download(req *http.Request) error {
+func (t *task) download(req *http.Request, bar *pb.ProgressBar) error {
 	resp, err := t.Client.Do(req)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get response: %q", t.String())
@@ -220,7 +227,9 @@ func (t *task) download(req *http.Request) error {
 	}
 	defer output.Close()
 
-	if _, err := io.Copy(output, resp.Body); err != nil {
+	rd := bar.NewProxyReader(resp.Body)
+
+	if _, err := io.Copy(output, rd); err != nil {
 		return errors.Wrapf(err, "failed to write response body: %q", t.String())
 	}
 
