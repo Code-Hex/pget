@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Songmu/prompter"
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 )
@@ -86,6 +87,15 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 	}, opts...)
 }
 
+const (
+	warningNumConnection = 4
+	warningMessage       = "[WARNING] Using a large number of connections to 1 URL can lead to DOS attacks.\n" +
+		"In most cases, `4` or less is enough. In addition, the case is increasing that if you use multiple connections to 1 URL does not increase the download speed with the spread of CDNs.\n" +
+		"See: https://github.com/Code-Hex/pget#disclaimer\n" +
+		"\n" +
+		"Would you execute knowing these?\n"
+)
+
 // Ready method define the variables required to Download.
 func (pget *Pget) Ready(version string, args []string) error {
 	opts, err := pget.parseOptions(args, version)
@@ -103,6 +113,10 @@ func (pget *Pget) Ready(version string, args []string) error {
 
 	if err := pget.parseURLs(); err != nil {
 		return errors.Wrap(err, "failed to parse of url")
+	}
+
+	if opts.NumConnection > warningNumConnection && !prompter.YN(warningMessage, false) {
+		return makeIgnoreErr()
 	}
 
 	pget.Procs = opts.NumConnection * len(pget.URLs)
