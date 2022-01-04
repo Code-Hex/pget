@@ -20,6 +20,7 @@ type assignTasksConfig struct {
 	URLs          []string
 	PartialDir    string
 	Filename      string
+	Client        *http.Client
 }
 
 type task struct {
@@ -29,6 +30,7 @@ type task struct {
 	Range      Range
 	PartialDir string
 	Filename   string
+	Client     *http.Client
 }
 
 func (t *task) destPath() string {
@@ -107,6 +109,7 @@ func assignTasks(c *assignTasksConfig) []*task {
 			Range:      r,
 			PartialDir: c.PartialDir,
 			Filename:   c.Filename,
+			Client:     c.Client,
 		})
 
 		totalActiveProcs++
@@ -121,6 +124,7 @@ type DownloadConfig struct {
 	ContentLength int64
 	Procs         int
 	URLs          []string
+	Client        *http.Client
 
 	*makeRequestOption
 }
@@ -160,6 +164,7 @@ func Download(ctx context.Context, c *DownloadConfig, opts ...DownloadOption) er
 		URLs:          c.URLs,
 		PartialDir:    partialDir,
 		Filename:      c.Filename,
+		Client:        newClient(c.Client),
 	})
 
 	if err := parallelDownload(ctx, &parallelDownloadConfig{
@@ -203,7 +208,7 @@ func parallelDownload(ctx context.Context, c *parallelDownloadConfig) error {
 }
 
 func (t *task) download(req *http.Request) error {
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := t.Client.Do(req)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get response: %q", t.String())
 	}
