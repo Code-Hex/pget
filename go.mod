@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/Code-Hex/updater v0.0.0-20160712085121-c3f278672520
+	github.com/Songmu/prompter v0.5.0
 	github.com/antonholmquist/jason v1.0.1-0.20160829104012-962e09b85496 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20161001163130-7b3beb6df3c4
 	github.com/cheggaaa/pb/v3 v3.0.8
