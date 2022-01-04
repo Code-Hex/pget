@@ -18,6 +18,11 @@ This is an example to download [linux kernel](https://www.kernel.org/). It will 
 
 ![pget](https://user-images.githubusercontent.com/6500104/147878414-321c57ad-cff2-40f3-b2a4-12c30ff1363f.gif)
 
+
+## Disclaimer
+
+This program comes with no warranty. You must use this program at your own risk.
+
 ## Installation
 
 ### Homebrew
@@ -47,6 +52,12 @@ If you have created such as this file
 You can do this
 
     cat list.txt | pget -p 2
+
+### Note
+
+The case is increasing that if you use multiple connections for a single URL does not increase the download speed with the spread of CDNs.
+
+I recommend to use multiple mirrors simultaneously for faster downloads (And the number of connections is 1 for each).
 
 ## Options
 
@@ -83,10 +94,6 @@ pget -p 6   10.54s user 34.52s system 25% cpu 2:56.93 total
 ## Binary
 
 You can download from [here](https://github.com/Code-Hex/pget/releases)
-
-## Disclaimer
-
-This program comes with no warranty. You must use this program at your own risk.
 
 ## Author
 
