@@ -88,10 +88,6 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 
 // Ready method define the variables required to Download.
 func (pget *Pget) Ready(version string, args []string) error {
-	if procs := os.Getenv("GOMAXPROCS"); procs == "" {
-		runtime.GOMAXPROCS(pget.Procs)
-	}
-
 	opts, err := pget.parseOptions(args, version)
 	if err != nil {
 		return errors.Wrap(errTop(err), "failed to parse command line args")
@@ -101,10 +97,6 @@ func (pget *Pget) Ready(version string, args []string) error {
 		pget.Trace = opts.Trace
 	}
 
-	if opts.Procs > 2 {
-		pget.Procs = opts.Procs
-	}
-
 	if opts.Timeout > 0 {
 		pget.timeout = opts.Timeout
 	}
@@ -112,6 +104,8 @@ func (pget *Pget) Ready(version string, args []string) error {
 	if err := pget.parseURLs(); err != nil {
 		return errors.Wrap(err, "failed to parse of url")
 	}
+
+	pget.Procs = opts.NumConnection * len(pget.URLs)
 
 	if opts.Output != "" {
 		pget.Output = opts.Output

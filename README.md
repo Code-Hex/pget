@@ -18,6 +18,11 @@ This is an example to download [linux kernel](https://www.kernel.org/). It will 
 
 ![pget](https://user-images.githubusercontent.com/6500104/147878414-321c57ad-cff2-40f3-b2a4-12c30ff1363f.gif)
 
+
+## Disclaimer
+
+This program comes with no warranty. You must use this program at your own risk.
+
 ## Installation
 
 ### Homebrew
@@ -33,8 +38,9 @@ Install
 
 ## Synopsis
 
-    % pget -p 6 URL 
-    % pget -p 6 MIRROR1 MIRROR2 MIRROR3
+This example will be used 2 connections per URL.
+
+    $ pget -p 2 MIRROR1 MIRROR2 MIRROR3
 
 If you have created such as this file
 
@@ -45,14 +51,20 @@ If you have created such as this file
 
 You can do this
 
-    cat list.txt | pget -p 6
+    cat list.txt | pget -p 2
+
+### Note
+
+The case is increasing that if you use multiple connections for a single URL does not increase the download speed with the spread of CDNs.
+
+I recommend to use multiple mirrors simultaneously for faster downloads (And the number of connections is 1 for each).
 
 ## Options
 
 ```
   Options:
   -h,  --help                   print usage and exit
-  -p,  --procs <num>            split ratio to download file
+  -p,  --procs <num>            the number of connections for a single URL (default 1)
   -o,  --output <filename>      output file to <filename>
   -t,  --timeout <seconds>      timeout of checking request in seconds
   -u,  --user-agent <agent>     identify as <agent>
@@ -82,10 +94,6 @@ pget -p 6   10.54s user 34.52s system 25% cpu 2:56.93 total
 ## Binary
 
 You can download from [here](https://github.com/Code-Hex/pget/releases)
-
-## Disclaimer
-
-This program comes with no warranty. You must use this program at your own risk.
 
 ## Author
 

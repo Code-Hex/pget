@@ -9,34 +9,58 @@ import (
 const version = "test_version"
 
 func TestParts_of_ready(t *testing.T) {
-	// begin test
-	url := "http://example.com/filename.tar.gz"
-
-	args := []string{
-		"pget",
-		"-p",
-		"2",
-		url,
-		"--trace",
-		"--output",
-		"filename.tar.gz",
+	cases := []struct {
+		name      string
+		args      []string
+		wantProcs int
+		wantURLs  int
+	}{
+		{
+			name: "one URL",
+			args: []string{
+				"pget",
+				"-p",
+				"2",
+				"http://example.com/filename.tar.gz",
+				"--trace",
+				"--output",
+				"filename.tar.gz",
+			},
+			wantProcs: 2,
+			wantURLs:  1,
+		},
+		{
+			name: "two URLs",
+			args: []string{
+				"pget",
+				"-p",
+				"2",
+				"http://example.com/filename.tar.gz",
+				"http://example2.com/filename.tar.gz",
+				"--trace",
+				"--output",
+				"filename.tar.gz",
+			},
+			wantProcs: 4,
+			wantURLs:  2,
+		},
 	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			p := New()
 
-	p := New()
-	opts, err := p.parseOptions(args, version)
-	if err != nil {
-		t.Errorf("failed to parse command line args: %s", err)
+			if err := p.Ready(version, tc.args); err != nil {
+				t.Errorf("failed to parse command line args: %s", err)
+			}
+
+			assert.Equal(t, true, p.Trace, "failed to parse arguments of trace")
+			assert.Equal(t, tc.wantProcs, p.Procs, "failed to parse arguments of procs")
+			assert.Equal(t, "filename.tar.gz", p.Output, "failed to parse output")
+
+			assert.Len(t, p.URLs, tc.wantURLs)
+		})
 	}
-
-	assert.Equal(t, true, opts.Trace, "failed to parse arguments of trace")
-	assert.Equal(t, opts.Procs, 2, "failed to parse arguments of procs")
-	assert.Equal(t, "filename.tar.gz", opts.Output, "failed to parse output")
-
-	if err := p.parseURLs(); err != nil {
-		t.Errorf("failed to parse of url: %s", err)
-	}
-
-	assert.Len(t, p.URLs, 1)
 }
 
 func TestShowhelp(t *testing.T) {
