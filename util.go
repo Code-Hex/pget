@@ -1,14 +1,9 @@
 package pget
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
-
-	"github.com/cheggaaa/pb/v3"
-	"github.com/pkg/errors"
 )
 
 func getPartialDirname(targetDir, filename string, procs int) string {
@@ -51,28 +46,4 @@ func makeRange(i, procs int, rangeSize, contentLength int64) Range {
 
 func (r Range) BytesRange() string {
 	return fmt.Sprintf("bytes=%d-%d", r.low, r.high)
-}
-
-func progressBar(ctx context.Context, contentLength int64, dirname string) error {
-	bar := pb.Start64(contentLength).SetWriter(stdout).Set(pb.Bytes, true)
-	defer bar.Finish()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-time.After(100 * time.Millisecond): // To save cpu resource
-			size, err := checkProgress(dirname)
-			if err != nil {
-				return errors.Wrap(err, "failed to get directory size")
-			}
-
-			if size < contentLength {
-				bar.SetCurrent(size)
-			} else {
-				bar.SetCurrent(contentLength)
-				return nil
-			}
-		}
-	}
 }
