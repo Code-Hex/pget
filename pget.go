@@ -42,7 +42,7 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 		return errTop(err)
 	}
 
-	client := newDownloadClient(pget.Procs, 16)
+	client := newDownloadClient(16)
 
 	target, err := Check(ctx, &CheckConfig{
 		URLs:    pget.URLs,

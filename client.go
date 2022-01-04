@@ -4,12 +4,13 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"runtime"
 	"time"
 )
 
-func newDownloadClient(procs, maxIdleConnsPerHost int) *http.Client {
+func newDownloadClient(maxIdleConnsPerHost int) *http.Client {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
-	dialer := newDialRateLimiter(procs, &net.Dialer{
+	dialer := newDialRateLimiter(&net.Dialer{
 		Timeout:   30 * time.Second,
 		KeepAlive: 30 * time.Second,
 	})
@@ -41,14 +42,14 @@ type dialRateLimiter struct {
 	sem    chan struct{}
 }
 
-func newDialRateLimiter(procs int, dialer *net.Dialer) *dialRateLimiter {
+func newDialRateLimiter(dialer *net.Dialer) *dialRateLimiter {
 	// exact value doesn't matter too much, but too low will be too slow,
 	// and too high will reduce the beneficial effect on thread count
 	const concurrentDialsPerCpu = 10
 
 	return &dialRateLimiter{
 		dialer: dialer,
-		sem:    make(chan struct{}, concurrentDialsPerCpu*procs),
+		sem:    make(chan struct{}, concurrentDialsPerCpu*runtime.NumCPU()),
 	}
 }
 
