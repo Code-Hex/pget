@@ -42,6 +42,7 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 		return errTop(err)
 	}
 
+	// TODO(codehex): calc maxIdleConnsPerHost
 	client := newDownloadClient(16)
 
 	target, err := Check(ctx, &CheckConfig{
