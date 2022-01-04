@@ -23,6 +23,12 @@ This is an example to download [linux kernel](https://www.kernel.org/). It will 
 
 This program comes with no warranty. You must use this program at your own risk.
 
+### Note
+
+- Using a large number of connections to a single URL can lead to DOS attacks.
+- The case is increasing that if you use multiple connections to 1 URL does not increase the download speed with the spread of CDNs.
+  - I recommend to use multiple mirrors simultaneously for faster downloads (And the number of connections is 1 for each).
+
 ## Installation
 
 ### Homebrew
@@ -50,12 +56,6 @@ If you have created such as this file
 You can do this
 
     cat list.txt | pget -p 2
-
-### Note
-
-The case is increasing that if you use multiple connections for a single URL does not increase the download speed with the spread of CDNs.
-
-I recommend to use multiple mirrors simultaneously for faster downloads (And the number of connections is 1 for each).
 
 ## Options
 
