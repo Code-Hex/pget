@@ -42,9 +42,12 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 		return errTop(err)
 	}
 
+	client := newDownloadClient(pget.Procs, 16)
+
 	target, err := Check(ctx, &CheckConfig{
 		URLs:    pget.URLs,
 		Timeout: time.Duration(pget.timeout) * time.Second,
+		Client:  client,
 	})
 	if err != nil {
 		return err
@@ -78,6 +81,7 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 		ContentLength: target.ContentLength,
 		Procs:         pget.Procs,
 		URLs:          target.URLs,
+		Client:        client,
 	}, opts...)
 }
 

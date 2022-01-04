@@ -23,9 +23,9 @@ func isNotLastURL(url, purl string) bool {
 
 // CheckConfig is a configuration to check download target.
 type CheckConfig struct {
-	URLs           []string
-	Timeout        time.Duration
-	DisableLogging bool
+	URLs    []string
+	Timeout time.Duration
+	Client  *http.Client
 }
 
 // Target represensts download target.
@@ -44,7 +44,9 @@ func Check(ctx context.Context, c *CheckConfig) (*Target, error) {
 		return nil, errors.New("URL is required at least one")
 	}
 
-	infos, err := getMirrorInfos(ctx, c.URLs)
+	client := newClient(c.Client)
+
+	infos, err := getMirrorInfos(ctx, client, c.URLs)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +67,7 @@ func Check(ctx context.Context, c *CheckConfig) (*Target, error) {
 	}, nil
 }
 
-func getMirrorInfos(ctx context.Context, urls []string) ([]*mirrorInfo, error) {
+func getMirrorInfos(ctx context.Context, client *http.Client, urls []string) ([]*mirrorInfo, error) {
 	var mu sync.Mutex
 	eg, ctx := errgroup.WithContext(ctx)
 
@@ -74,7 +76,7 @@ func getMirrorInfos(ctx context.Context, urls []string) ([]*mirrorInfo, error) {
 	for _, url := range urls {
 		url := url
 		eg.Go(func() error {
-			info, err := getMirrorInfo(ctx, url)
+			info, err := getMirrorInfo(ctx, client, url)
 			if err != nil {
 				return errors.Wrap(err, url)
 			}
@@ -99,14 +101,14 @@ type mirrorInfo struct {
 	ContentLength int64
 }
 
-func getMirrorInfo(ctx context.Context, url string) (*mirrorInfo, error) {
+func getMirrorInfo(ctx context.Context, client *http.Client, url string) (*mirrorInfo, error) {
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to make head request")
 	}
 	req = req.WithContext(ctx)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to head request")
 	}
