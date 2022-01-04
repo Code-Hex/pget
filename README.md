@@ -32,8 +32,6 @@ This program comes with no warranty. You must use this program at your own risk.
 
 ### Go
 
-Install
-
     $ go install github.com/Code-Hex/pget/cmd/pget@latest
 
 ## Synopsis
