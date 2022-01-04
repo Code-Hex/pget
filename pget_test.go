@@ -61,6 +61,7 @@ func TestPget(t *testing.T) {
 		Dirname:       tmpdir,
 		Procs:         4,
 		URLs:          []string{ts.URL},
+		Client:        newDownloadClient(1),
 	}
 
 	t.Run("check", func(t *testing.T) {
