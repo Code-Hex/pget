@@ -11,14 +11,14 @@ import (
 
 // Options struct for parse command line arguments
 type Options struct {
-	Help      bool   `short:"h" long:"help"`
-	Procs     int    `short:"p" long:"procs"`
-	Output    string `short:"o" long:"output"`
-	Timeout   int    `short:"t" long:"timeout" default:"10"`
-	UserAgent string `short:"u" long:"user-agent"`
-	Referer   string `short:"r" long:"referer"`
-	Update    bool   `long:"check-update"`
-	Trace     bool   `long:"trace"`
+	Help          bool   `short:"h" long:"help"`
+	NumConnection int    `short:"p" long:"procs" default:"1"`
+	Output        string `short:"o" long:"output"`
+	Timeout       int    `short:"t" long:"timeout" default:"10"`
+	UserAgent     string `short:"u" long:"user-agent"`
+	Referer       string `short:"r" long:"referer"`
+	Update        bool   `long:"check-update"`
+	Trace         bool   `long:"trace"`
 }
 
 func (opts *Options) parse(argv []string, version string) ([]string, error) {
@@ -41,7 +41,7 @@ func (opts Options) usage(version string) []byte {
 		`Usage: pget [options] URL
   Options:
   -h,  --help                   print usage and exit
-  -p,  --procs <num>            split ratio to download file
+  -p,  --procs <num>            the number of connections for a single URL (default 1)
   -o,  --output <filename>      output file to <filename>
   -t,  --timeout <seconds>      timeout of checking request in seconds (default 10s)
   -u,  --user-agent <agent>     identify as <agent>

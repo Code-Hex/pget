@@ -33,8 +33,9 @@ Install
 
 ## Synopsis
 
-    % pget -p 6 URL 
-    % pget -p 6 MIRROR1 MIRROR2 MIRROR3
+This example will be used 2 connections per URL.
+
+    $ pget -p 2 MIRROR1 MIRROR2 MIRROR3
 
 If you have created such as this file
 
@@ -45,14 +46,14 @@ If you have created such as this file
 
 You can do this
 
-    cat list.txt | pget -p 6
+    cat list.txt | pget -p 2
 
 ## Options
 
 ```
   Options:
   -h,  --help                   print usage and exit
-  -p,  --procs <num>            split ratio to download file
+  -p,  --procs <num>            the number of connections for a single URL (default 1)
   -o,  --output <filename>      output file to <filename>
   -t,  --timeout <seconds>      timeout of checking request in seconds
   -u,  --user-agent <agent>     identify as <agent>
