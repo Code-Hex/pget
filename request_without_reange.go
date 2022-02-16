@@ -1,11 +1,7 @@
 package pget
 
-/**
- * @website http://albulescu.ro
- * @author Cosmin Albulescu <cosmin@albulescu.ro>
- */
-
 import (
+	"context"
 	"io"
 	"net/http"
 	"os"
@@ -18,13 +14,13 @@ import (
 
 func DownloadFiles(urls []string, dest string) error {
 	for _, link := range urls {
-		if err := DownloadFile(link, dest); err != nil {
+		if err := DownloadFile(link, dest, context.Background()); err != nil {
 			return err
 		}
 	}
 	return nil
 }
-func DownloadFile(url string, dest string) error {
+func DownloadFile(url string, dest string, ctx context.Context) error {
 	file := path.Base(url)
 	var path = filepath.Join(dest, file)
 	out, err := os.Create(path)
@@ -37,6 +33,7 @@ func DownloadFile(url string, dest string) error {
 	if err != nil {
 		return err
 	}
+	req = req.WithContext(ctx)
 	req.Header.Add("user-agent", "curl/7.81.0")
 
 	resp, err := http.DefaultClient.Do(req)
@@ -44,14 +41,16 @@ func DownloadFile(url string, dest string) error {
 		return err
 	}
 	defer resp.Body.Close()
+	bar := new(pb.ProgressBar)
 	size, err := strconv.Atoi(resp.Header.Get("content-length"))
-	if err != nil {
-		return err
+	// when server return content-length
+	if err == nil {
+		bar.SetTotal(int64(size))
 	}
-	bar := pb.Start64(int64(size)).SetWriter(stdout).Set(pb.Bytes, true)
+	bar.SetWriter(stdout).Set(pb.Bytes, true).Start()
+	bar.Start()
 	defer bar.Finish()
 	rd := bar.NewProxyReader(resp.Body)
-
 	_, err = io.Copy(out, rd)
 	return err
 }
