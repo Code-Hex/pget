@@ -53,10 +53,5 @@ func DownloadFile(url string, dest string) error {
 	rd := bar.NewProxyReader(resp.Body)
 
 	_, err = io.Copy(out, rd)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
