@@ -6,7 +6,6 @@ package pget
  */
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -38,13 +37,13 @@ func DownloadFile(url string, dest string) error {
 	if err != nil {
 		return err
 	}
+	req.Header.Add("user-agent", "curl/7.81.0")
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
-	resp.Header.Add("user-agent", "curl/7.81.0")
 	defer resp.Body.Close()
-	fmt.Printf("%v\n", resp.Header)
 	size, err := strconv.Atoi(resp.Header.Get("content-length"))
 	if err != nil {
 		return err

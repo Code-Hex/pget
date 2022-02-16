@@ -14,10 +14,11 @@ func main() {
 	cli := pget.New()
 	if err := cli.Run(context.Background(), version, os.Args[1:]); err != nil {
 		if pget.ISNotSupportRequestRange(err) {
-			if err = pget.DownloadFiles(cli.URLs, "./"); err != nil {
-				fmt.Fprintf(os.Stderr, "Error:\n%+v\n", err)
+			if e := pget.DownloadFiles(cli.URLs, "./"); e != nil {
+				fmt.Fprintf(os.Stderr, "Error:\n%+v\n", e)
 				os.Exit(1)
 			}
+			os.Exit(0)
 		}
 		if cli.Trace {
 			fmt.Fprintf(os.Stderr, "Error:\n%+v\n", err)
