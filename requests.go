@@ -4,12 +4,19 @@ import (
 	"context"
 	"net/http"
 	"path"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
+
+var NotSupportRequestRange = errors.New("does not support range request")
+
+func ISNotSupportRequestRange(e error) bool {
+	return strings.Contains(e.Error(), NotSupportRequestRange.Error())
+}
 
 // Range struct for range access
 type Range struct {
@@ -114,7 +121,7 @@ func getMirrorInfo(ctx context.Context, client *http.Client, url string) (*mirro
 	}
 
 	if resp.Header.Get("Accept-Ranges") != "bytes" {
-		return nil, errors.New("does not support range request")
+		return nil, NotSupportRequestRange
 	}
 
 	if resp.ContentLength <= 0 {
