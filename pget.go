@@ -66,7 +66,7 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 	})
 	if err != nil {
 		if errors.Is(err, ErrNotSupportRequestRange) {
-			return pget.downloadFiles(context.Background(), pget.URLs, dir)
+			return pget.downloadFilesWithoutRange(context.Background(), pget.URLs, dir)
 		}
 		return err
 	}

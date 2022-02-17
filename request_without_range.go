@@ -12,7 +12,7 @@ import (
 	"github.com/cheggaaa/pb/v3"
 )
 
-func (pget *Pget) downloadFiles(ctx context.Context, urls []string, dest string) error {
+func (pget *Pget) downloadFilesWithoutRange(ctx context.Context, urls []string, dest string) error {
 	defer ctx.Done()
 	for _, link := range urls {
 		if err := pget.downloadFile(context.Background(), link, dest); err != nil {

@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func Test_DownloadFiles(t *testing.T) {
+func Test_downloadFilesWithoutRange(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/test.tar.gz", func(w http.ResponseWriter, r *http.Request) {
 		fp := "_testdata/test.tar.gz"
@@ -33,7 +33,7 @@ func Test_DownloadFiles(t *testing.T) {
 	tmpdir := t.TempDir()
 	t.Run("download_without_range", func(t *testing.T) {
 
-		err := cli.downloadFiles(context.Background(), []string{url + "/test.tar.gz"}, tmpdir)
+		err := cli.downloadFilesWithoutRange(context.Background(), []string{url + "/test.tar.gz"}, tmpdir)
 		if err != nil {
 			t.Fatal(err)
 		}
