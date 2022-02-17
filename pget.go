@@ -44,25 +44,13 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 	}
 	// TODO(codehex): calc maxIdleConnsPerHost
 	client := newDownloadClient(16)
-
-	target, err := Check(ctx, &CheckConfig{
-		URLs:    pget.URLs,
-		Timeout: time.Duration(pget.timeout) * time.Second,
-		Client:  client,
-	})
-	if err != nil {
-		return err
-	}
-
-	filename := target.Filename
-
 	var dir string
 	if pget.Output != "" {
 		fi, err := os.Stat(pget.Output)
 		if err == nil && fi.IsDir() {
 			dir = pget.Output
 		} else {
-			dir, filename = filepath.Split(pget.Output)
+			dir, _ = filepath.Split(pget.Output)
 			if dir != "" {
 				if err := os.MkdirAll(dir, 0755); err != nil {
 					return errors.Wrapf(err, "failed to create diretory at %s", dir)
@@ -70,6 +58,20 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 			}
 		}
 	}
+
+	target, err := Check(ctx, &CheckConfig{
+		URLs:    pget.URLs,
+		Timeout: time.Duration(pget.timeout) * time.Second,
+		Client:  client,
+	})
+	if err != nil {
+		if errors.Is(err, ErrNotSupportRequestRange) {
+			return pget.downloadFiles(context.Background(), pget.URLs, dir)
+		}
+		return err
+	}
+
+	filename := target.Filename
 
 	opts := []DownloadOption{
 		WithUserAgent(pget.useragent),

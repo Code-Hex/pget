@@ -33,7 +33,7 @@ func Test_DownloadFiles(t *testing.T) {
 	tmpdir := t.TempDir()
 	t.Run("download_without_range", func(t *testing.T) {
 
-		err := cli.DownloadFiles(context.Background(), []string{url + "/test.tar.gz"}, tmpdir)
+		err := cli.downloadFiles(context.Background(), []string{url + "/test.tar.gz"}, tmpdir)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -6,3 +6,4 @@
 vendor
 bin/*
 !bin/.gitkeep
+cmd/pget/pget
