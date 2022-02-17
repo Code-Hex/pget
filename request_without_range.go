@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 
 	"github.com/cheggaaa/pb/v3"
 )
@@ -21,13 +22,6 @@ func (pget *Pget) DownloadFiles(ctx context.Context, urls []string, dest string)
 	return nil
 }
 func (pget *Pget) downloadFile(ctx context.Context, url string, dest string) error {
-	file := path.Base(url)
-	var path = filepath.Join(dest, file)
-	out, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -54,6 +48,27 @@ func (pget *Pget) downloadFile(ctx context.Context, url string, dest string) err
 	bar.Start()
 	defer bar.Finish()
 	rd := bar.NewProxyReader(resp.Body)
+
+	file := getFilename(resp)
+	var path = filepath.Join(dest, file)
+	out, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
 	_, err = io.Copy(out, rd)
 	return err
+}
+
+func getFilename(resp *http.Response) string {
+	var fileName = path.Base(resp.Request.URL.String())
+	var p = regexp.MustCompile(`.+filename="(.+?)".*`)
+	var contentDisposition = resp.Header.Get("Content-Disposition")
+	if contentDisposition != "" {
+		var m = p.FindAllStringSubmatch(contentDisposition, -1)
+		if len(m) > 0 && len(m[0]) > 0 {
+			fileName = m[0][0]
+		}
+	}
+	return fileName
 }
