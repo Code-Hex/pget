@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
+
 	"github.com/Code-Hex/pget"
 )
 
@@ -13,8 +15,8 @@ var version string
 func main() {
 	cli := pget.New()
 	if err := cli.Run(context.Background(), version, os.Args[1:]); err != nil {
-		if pget.ISNotSupportRequestRange(err) {
-			if e := pget.DownloadFiles(cli.URLs, "./"); e != nil {
+		if errors.Is(err, pget.ErrNotSupportRequestRange) {
+			if e := cli.DownloadFiles(context.Background(), cli.URLs, "./"); e != nil {
 				fmt.Fprintf(os.Stderr, "Error:\n%+v\n", e)
 				os.Exit(1)
 			}

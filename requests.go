@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"path"
-	"strings"
 	"sync"
 	"time"
 
@@ -13,10 +12,6 @@ import (
 )
 
 var ErrNotSupportRequestRange = errors.New("does not support range request")
-
-func ISNotSupportRequestRange(e error) bool {
-	return strings.Contains(e.Error(), ErrNotSupportRequestRange.Error())
-}
 
 // Range struct for range access
 type Range struct {

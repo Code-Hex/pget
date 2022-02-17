@@ -7,20 +7,20 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 
 	"github.com/cheggaaa/pb/v3"
 )
 
-func DownloadFiles(urls []string, dest string) error {
+func (pget *Pget) DownloadFiles(ctx context.Context, urls []string, dest string) error {
+	defer ctx.Done()
 	for _, link := range urls {
-		if err := DownloadFile(link, dest, context.Background()); err != nil {
+		if err := pget.downloadFile(context.Background(), link, dest); err != nil {
 			return err
 		}
 	}
 	return nil
 }
-func DownloadFile(url string, dest string, ctx context.Context) error {
+func (pget *Pget) downloadFile(ctx context.Context, url string, dest string) error {
 	file := path.Base(url)
 	var path = filepath.Join(dest, file)
 	out, err := os.Create(path)
@@ -34,7 +34,12 @@ func DownloadFile(url string, dest string, ctx context.Context) error {
 		return err
 	}
 	req = req.WithContext(ctx)
-	req.Header.Add("user-agent", "curl/7.81.0")
+	if pget.useragent != "" {
+		req.Header.Add("user-agent", pget.useragent)
+	}
+	if pget.referer != "" {
+		req.Header.Add("Referer", pget.referer)
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -42,10 +47,8 @@ func DownloadFile(url string, dest string, ctx context.Context) error {
 	}
 	defer resp.Body.Close()
 	bar := new(pb.ProgressBar)
-	size, err := strconv.Atoi(resp.Header.Get("content-length"))
-	// when server return content-length
-	if err == nil {
-		bar.SetTotal(int64(size))
+	if resp.ContentLength > 0 {
+		bar.SetTotal(int64(resp.ContentLength))
 	}
 	bar.SetWriter(stdout).Set(pb.Bytes, true).Start()
 	bar.Start()
