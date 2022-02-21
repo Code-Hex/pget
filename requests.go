@@ -38,7 +38,7 @@ type Target struct {
 }
 
 // Check checks be able to download from targets
-func Check(ctx context.Context, c *CheckConfig) (*Target, error) {
+func (pget *Pget) Check(ctx context.Context, c *CheckConfig) (*Target, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.Timeout)
 	defer cancel()
 
@@ -48,18 +48,24 @@ func Check(ctx context.Context, c *CheckConfig) (*Target, error) {
 
 	client := newClient(c.Client)
 
-	infos, err := getMirrorInfos(ctx, client, c.URLs)
+	infos, err := pget.getMirrorInfos(ctx, client, c.URLs)
+	urls := make([]string, len(infos))
+	for i, info := range infos {
+		urls[i] = info.RetrievedURL
+	}
 	if err != nil {
+		if errors.Is(err, ErrNotSupportRequestRange) {
+			return &Target{
+				Filename:      path.Base(infos[0].RetrievedURL),
+				ContentLength: infos[0].ContentLength,
+				URLs:          urls,
+			}, nil
+		}
 		return nil, err
 	}
 
 	if err := checkEachContent(infos); err != nil {
 		return nil, err
-	}
-
-	urls := make([]string, len(infos))
-	for i, info := range infos {
-		urls[i] = info.RetrievedURL
 	}
 
 	return &Target{
@@ -69,7 +75,7 @@ func Check(ctx context.Context, c *CheckConfig) (*Target, error) {
 	}, nil
 }
 
-func getMirrorInfos(ctx context.Context, client *http.Client, urls []string) ([]*mirrorInfo, error) {
+func (pget *Pget) getMirrorInfos(ctx context.Context, client *http.Client, urls []string) ([]*mirrorInfo, error) {
 	var mu sync.Mutex
 	eg, ctx := errgroup.WithContext(ctx)
 
@@ -78,9 +84,11 @@ func getMirrorInfos(ctx context.Context, client *http.Client, urls []string) ([]
 	for _, url := range urls {
 		url := url
 		eg.Go(func() error {
-			info, err := getMirrorInfo(ctx, client, url)
+			info, err := pget.getMirrorInfo(ctx, client, url)
 			if err != nil {
-				return errors.Wrap(err, url)
+				if !errors.Is(err, ErrNotSupportRequestRange) {
+					return errors.Wrap(err, url)
+				}
 			}
 
 			mu.Lock()
@@ -92,7 +100,7 @@ func getMirrorInfos(ctx context.Context, client *http.Client, urls []string) ([]
 	}
 
 	if err := eg.Wait(); err != nil {
-		return nil, err
+		return infos, err
 	}
 
 	return infos, nil
@@ -103,22 +111,30 @@ type mirrorInfo struct {
 	ContentLength int64
 }
 
-func getMirrorInfo(ctx context.Context, client *http.Client, url string) (*mirrorInfo, error) {
-	req, err := http.NewRequest("HEAD", url, nil)
+func (pget *Pget) getMirrorInfo(ctx context.Context, client *http.Client, url string) (*mirrorInfo, error) {
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to make head request")
 	}
 	req = req.WithContext(ctx)
+	if pget.referer != "" {
+		req.Header.Set("User-Agent", pget.useragent)
+	}
+	if pget.useragent != "" {
+		req.Header.Set("User-Agent", pget.useragent)
 
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to head request")
 	}
 
 	if resp.Header.Get("Accept-Ranges") != "bytes" {
-		return nil, ErrNotSupportRequestRange
+		return &mirrorInfo{
+			RetrievedURL:  url,
+			ContentLength: resp.ContentLength,
+		}, ErrNotSupportRequestRange
 	}
-
 	if resp.ContentLength <= 0 {
 		return nil, errors.New("invalid content length")
 	}

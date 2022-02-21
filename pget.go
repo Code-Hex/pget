@@ -59,14 +59,26 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 		}
 	}
 
-	target, err := Check(ctx, &CheckConfig{
+	target, err := pget.Check(ctx, &CheckConfig{
 		URLs:    pget.URLs,
 		Timeout: time.Duration(pget.timeout) * time.Second,
 		Client:  client,
 	})
+
 	if err != nil {
 		if errors.Is(err, ErrNotSupportRequestRange) {
-			return pget.downloadFilesWithoutRange(context.Background(), pget.URLs, dir)
+			opts := []DownloadOption{
+				WithUserAgent(pget.useragent),
+				WithReferer(pget.referer),
+			}
+			return Download(ctx, &DownloadConfig{
+				Filename:      target.Filename,
+				Dirname:       dir,
+				ContentLength: target.ContentLength,
+				Procs:         1,
+				URLs:          pget.URLs,
+				Client:        client,
+			}, opts...)
 		}
 		return err
 	}
@@ -76,6 +88,7 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 	opts := []DownloadOption{
 		WithUserAgent(pget.useragent),
 		WithReferer(pget.referer),
+		AsRangeRequest(),
 	}
 
 	return Download(ctx, &DownloadConfig{

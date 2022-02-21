@@ -45,8 +45,9 @@ func (t *task) String() string {
 }
 
 type makeRequestOption struct {
-	useragent string
-	referer   string
+	useragent       string
+	referer         string
+	useRangeRequest bool
 }
 
 func (t *task) makeRequest(ctx context.Context, opt *makeRequestOption) (*http.Request, error) {
@@ -57,7 +58,9 @@ func (t *task) makeRequest(ctx context.Context, opt *makeRequestOption) (*http.R
 	req = req.WithContext(ctx)
 
 	// set download ranges
-	req.Header.Set("Range", t.Range.BytesRange())
+	if opt.useRangeRequest {
+		req.Header.Set("Range", t.Range.BytesRange())
+	}
 
 	// set useragent
 	if opt.useragent != "" {
@@ -131,6 +134,11 @@ type DownloadConfig struct {
 
 type DownloadOption func(c *DownloadConfig)
 
+func AsRangeRequest() DownloadOption {
+	return func(c *DownloadConfig) {
+		c.makeRequestOption.useRangeRequest = true
+	}
+}
 func WithUserAgent(ua string) DownloadOption {
 	return func(c *DownloadConfig) {
 		c.makeRequestOption.useragent = ua

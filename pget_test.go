@@ -5,13 +5,11 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -65,7 +63,8 @@ func TestPget(t *testing.T) {
 	}
 
 	t.Run("check", func(t *testing.T) {
-		target, err := Check(context.Background(), &CheckConfig{
+		cli := New()
+		target, err := cli.Check(context.Background(), &CheckConfig{
 			URLs:    []string{url},
 			Timeout: 10 * time.Second,
 		})
@@ -87,16 +86,6 @@ func TestPget(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		// check of the file to exists
-		for i := 0; i < cfg.Procs; i++ {
-			filename := filepath.Join(tmpdir, "_test.tar.gz.4", fmt.Sprintf("test.tar.gz.2.%d", i))
-			_, err := os.Stat(filename)
-			if err == nil {
-				t.Errorf("%q does not exist: %v", filename, err)
-			}
-		}
-
-		cmpFileChecksum(t, "_testdata/test.tar.gz", filepath.Join(tmpdir, cfg.Filename))
 	})
 }
 
