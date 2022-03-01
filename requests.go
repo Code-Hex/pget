@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// ErrNotSupportRequestRange is an error to represents does not support range request
 var ErrNotSupportRequestRange = errors.New("does not support range request")
 
 // Range struct for range access
@@ -86,9 +87,7 @@ func (pget *Pget) getMirrorInfos(ctx context.Context, client *http.Client, urls 
 		eg.Go(func() error {
 			info, err := pget.getMirrorInfo(ctx, client, url)
 			if err != nil {
-				if !errors.Is(err, ErrNotSupportRequestRange) {
-					return errors.Wrap(err, url)
-				}
+				return errors.Wrap(err, url)
 			}
 
 			mu.Lock()
