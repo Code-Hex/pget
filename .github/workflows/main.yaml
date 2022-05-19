@@ -10,12 +10,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Setup go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
-        go-version: '^1.17.5'
+        go-version: '1.18'
     - name: Declare some variables
       id: vars
       run: |
@@ -23,7 +22,7 @@ jobs:
     - name: Test Coverage (pkg)
       run: go test ./... -coverprofile=${{ steps.vars.outputs.coverage_txt }}
     - name: Upload coverage
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with:
         files: ${{ steps.vars.outputs.coverage_txt }}
     - name: Run GoReleaser
