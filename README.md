@@ -33,8 +33,7 @@ This program comes with no warranty. You must use this program at your own risk.
 
 ### Homebrew
 
-	brew update
-	brew install Code-Hex/tap/pget
+    $ brew install pget
 
 ### Go
 
