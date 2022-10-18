@@ -60,9 +60,7 @@ func (t *task) makeRequest(ctx context.Context, opt *makeRequestOption) (*http.R
 	req.Header.Set("Range", t.Range.BytesRange())
 
 	// set useragent
-	if opt.useragent != "" {
-		req.Header.Set("User-Agent", opt.useragent)
-	}
+	req.Header.Set("User-Agent", opt.useragent)
 
 	// set referer
 	if opt.referer != "" {
@@ -131,8 +129,11 @@ type DownloadConfig struct {
 
 type DownloadOption func(c *DownloadConfig)
 
-func WithUserAgent(ua string) DownloadOption {
+func WithUserAgent(ua, fallback string) DownloadOption {
 	return func(c *DownloadConfig) {
+		if ua == "" {
+			ua = fallback
+		}
 		c.makeRequestOption.useragent = ua
 	}
 }
