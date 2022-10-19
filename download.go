@@ -129,10 +129,10 @@ type DownloadConfig struct {
 
 type DownloadOption func(c *DownloadConfig)
 
-func WithUserAgent(ua, fallback string) DownloadOption {
+func WithUserAgent(ua, version string) DownloadOption {
 	return func(c *DownloadConfig) {
 		if ua == "" {
-			ua = fallback
+			ua = "Pget/" + version
 		}
 		c.makeRequestOption.useragent = ua
 	}
