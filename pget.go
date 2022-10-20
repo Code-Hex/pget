@@ -73,7 +73,7 @@ func (pget *Pget) Run(ctx context.Context, version string, args []string) error 
 	}
 
 	opts := []DownloadOption{
-		WithUserAgent(pget.useragent),
+		WithUserAgent(pget.useragent, version),
 		WithReferer(pget.referer),
 	}
 
