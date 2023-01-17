@@ -13,6 +13,14 @@ func getPartialDirname(targetDir, filename string, procs int) string {
 	return filepath.Join(targetDir, fmt.Sprintf("_%s.%d", filename, procs))
 }
 
+// getPartialFilePath returns the path of the partial file
+func getPartialFilePath(targetDir, filename string, id, procs int) string {
+	return filepath.Join(
+		targetDir,
+		fmt.Sprintf("%s.%d.%d", filename, procs, id),
+	)
+}
+
 // checkProgress In order to confirm the degree of progress
 func checkProgress(dirname string) (int64, error) {
 	return subDirsize(dirname)
