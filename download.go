@@ -262,10 +262,6 @@ func bindFiles(c *DownloadConfig, partialDir string) error {
 			return errors.Wrapf(err, "failed to copy %q", name)
 		}
 
-		// remove a file in download location for join
-		if err := os.Remove(name); err != nil {
-			return errors.Wrapf(err, "failed to remove %q in download location", name)
-		}
 		return nil
 	}
 
@@ -273,6 +269,11 @@ func bindFiles(c *DownloadConfig, partialDir string) error {
 		name := fmt.Sprintf("%s/%s.%d.%d", partialDir, c.Filename, c.Procs, i)
 		if err := copyFn(name); err != nil {
 			return err
+		}
+
+		// remove a file in download location for join
+		if err := os.Remove(name); err != nil {
+			return errors.Wrapf(err, "failed to remove %q in download location", name)
 		}
 	}
 
