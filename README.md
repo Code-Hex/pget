@@ -6,6 +6,9 @@ Pget - The fastest file download client
 [![Go Report Card](https://goreportcard.com/badge/github.com/Code-Hex/pget)](https://goreportcard.com/report/github.com/Code-Hex/pget)
 [![GitHub release](https://img.shields.io/github/release/Code-Hex/pget.svg)](https://github.com/Code-Hex/pget)
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
+
+**Ad**: I'm currently developing a new date and time library [synchro](https://github.com/Code-Hex/synchro) for the modern era. please give it ⭐!!
+
 ## Description
 
 Multi-Connection Download using parallel requests.
