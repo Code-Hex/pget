@@ -30,13 +30,16 @@ builds:
 archives:
 - builds:
   - pget
-  name_template: 'pget_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
-  replacements:
-    darwin: macOS
-    linux: Linux
-    windows: Windows
-    386: i386
-    amd64: x86_64
+  name_template: >-
+    pget_
+    {{ .Version }}_
+    {{- if eq .Os "darwin" }}macOS
+    {{- else if eq .Os "linux" }}Linux
+    {{- else if eq .Os "windows" }}Windows
+    {{- else }}{{ title .Os }}{{ end }}_
+    {{- if eq .Arch "amd64" }}x86_64
+    {{- else if eq .Arch "386" }}i386
+    {{- else }}{{ .Arch }}{{ end }}
   format_overrides:
   - goos: windows
     format: zip
@@ -60,8 +63,6 @@ nfpms:
     homepage: https://github.com/Code-Hex/pget
     bindir: /usr/local/bin
     description: The fastest file download client
-    replacements:
-      linux: Linux
     formats:
       - apk
       - deb
