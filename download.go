@@ -266,8 +266,8 @@ func bindFiles(c *DownloadConfig, partialDir string) error {
 		}
 
 		// remove a file in download location for join
-		if err := os.Remove(name); err != nil {
-			return errors.Wrapf(err, "failed to remove %q in download location", name)
+		if err := os.Remove(partialFilename); err != nil {
+			return errors.Wrapf(err, "failed to remove %q in download location", partialFilename)
 		}
 	}
 

@@ -2,6 +2,7 @@ package pget
 
 import (
 	"context"
+	"mime"
 	"net/http"
 	"path"
 	"sync"
@@ -51,8 +52,12 @@ func Check(ctx context.Context, c *CheckConfig) (*Target, error) {
 		return nil, err
 	}
 
-	if err := checkEachContent(infos); err != nil {
+	filename, err := checkEachContent(infos)
+	if err != nil {
 		return nil, err
+	}
+	if filename == "" {
+		filename = path.Base(infos[0].RetrievedURL)
 	}
 
 	urls := make([]string, len(infos))
@@ -61,7 +66,7 @@ func Check(ctx context.Context, c *CheckConfig) (*Target, error) {
 	}
 
 	return &Target{
-		Filename:      path.Base(infos[0].RetrievedURL),
+		Filename:      filename,
 		ContentLength: infos[0].ContentLength,
 		URLs:          urls,
 	}, nil
@@ -99,6 +104,7 @@ func getMirrorInfos(ctx context.Context, client *http.Client, urls []string) ([]
 type mirrorInfo struct {
 	RetrievedURL  string
 	ContentLength int64
+	Filename      string
 }
 
 func getMirrorInfo(ctx context.Context, client *http.Client, url string) (*mirrorInfo, error) {
@@ -121,6 +127,12 @@ func getMirrorInfo(ctx context.Context, client *http.Client, url string) (*mirro
 		return nil, errors.New("invalid content length")
 	}
 
+	filename := ""
+	_, params, _ := mime.ParseMediaType(resp.Header.Get("Content-Disposition"))
+	if len(params) > 0 && params["filename"] != "" {
+		filename = params["filename"]
+	}
+
 	// To perform with the correct "range access"
 	// get the last url in the redirect
 	_url := resp.Request.URL.String()
@@ -128,26 +140,34 @@ func getMirrorInfo(ctx context.Context, client *http.Client, url string) (*mirro
 		return &mirrorInfo{
 			RetrievedURL:  _url,
 			ContentLength: resp.ContentLength,
+			Filename:      filename,
 		}, nil
 	}
 
 	return &mirrorInfo{
 		RetrievedURL:  url,
 		ContentLength: resp.ContentLength,
+		Filename:      filename,
 	}, nil
 }
 
 // check contents are the same on each mirrors
-func checkEachContent(infos []*mirrorInfo) error {
-	var contentLength int64
+func checkEachContent(infos []*mirrorInfo) (string, error) {
+	var (
+		filename      string
+		contentLength int64
+	)
 	for _, info := range infos {
 		if contentLength == 0 {
 			contentLength = info.ContentLength
 			continue
 		}
 		if contentLength != info.ContentLength {
-			return errors.New("does not match content length on each mirrors")
+			return "", errors.New("does not match content length on each mirrors")
+		}
+		if info.Filename != "" {
+			filename = info.Filename
 		}
 	}
-	return nil
+	return filename, nil
 }

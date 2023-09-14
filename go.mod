@@ -1,6 +1,6 @@
 module github.com/Code-Hex/pget
 
-go 1.18
+go 1.21
 
 require (
 	github.com/Code-Hex/updater v0.0.0-20160712085121-c3f278672520
