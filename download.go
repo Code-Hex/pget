@@ -34,10 +34,7 @@ type task struct {
 }
 
 func (t *task) destPath() string {
-	return filepath.Join(
-		t.PartialDir,
-		fmt.Sprintf("%s.%d.%d", t.Filename, t.Procs, t.ID),
-	)
+	return getPartialFilePath(t.PartialDir, t.Filename, t.Procs, t.ID)
 }
 
 func (t *task) String() string {
@@ -79,10 +76,7 @@ func assignTasks(c *assignTasksConfig) []*task {
 
 		r := makeRange(i, c.Procs, c.TaskSize, c.ContentLength)
 
-		partName := filepath.Join(
-			c.PartialDir,
-			fmt.Sprintf("%s.%d.%d", c.Filename, c.Procs, i),
-		)
+		partName := getPartialFilePath(c.PartialDir, c.Filename, c.Procs, i)
 
 		if info, err := os.Stat(partName); err == nil {
 			infosize := info.Size()
@@ -266,8 +260,8 @@ func bindFiles(c *DownloadConfig, partialDir string) error {
 	}
 
 	for i := 0; i < c.Procs; i++ {
-		name := fmt.Sprintf("%s/%s.%d.%d", partialDir, c.Filename, c.Procs, i)
-		if err := copyFn(name); err != nil {
+		partialFilename := getPartialFilePath(partialDir, c.Filename, c.Procs, i)
+		if err := copyFn(partialFilename); err != nil {
 			return err
 		}
 
