@@ -48,7 +48,7 @@ archives:
 
 brews:
 - name: pget
-  tap:
+  repository:
     owner: Code-Hex
     name: homebrew-tap
     token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
