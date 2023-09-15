@@ -158,15 +158,15 @@ func checkEachContent(infos []*mirrorInfo) (string, error) {
 		contentLength int64
 	)
 	for _, info := range infos {
+		if info.Filename != "" {
+			filename = info.Filename
+		}
 		if contentLength == 0 {
 			contentLength = info.ContentLength
 			continue
 		}
 		if contentLength != info.ContentLength {
 			return "", errors.New("does not match content length on each mirrors")
-		}
-		if info.Filename != "" {
-			filename = info.Filename
 		}
 	}
 	return filename, nil
