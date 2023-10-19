@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -22,7 +21,7 @@ func TestRunResume(t *testing.T) {
 
 	mux.HandleFunc("/file.name", func(w http.ResponseWriter, r *http.Request) {
 		fp := filepath.Join("_testdata", "test.tar.gz")
-		data, err := ioutil.ReadFile(fp)
+		data, err := os.ReadFile(fp)
 		if err != nil {
 			t.Errorf("failed to readfile: %s", err)
 		}

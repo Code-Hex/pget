@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,7 +18,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	stdout = ioutil.Discard
+	stdout = io.Discard
 	os.Exit(m.Run())
 }
 
@@ -40,7 +39,7 @@ func TestPget(t *testing.T) {
 
 	mux.HandleFunc("/test.tar.gz", func(w http.ResponseWriter, r *http.Request) {
 		fp := "_testdata/test.tar.gz"
-		data, err := ioutil.ReadFile(fp)
+		data, err := os.ReadFile(fp)
 		if err != nil {
 			t.Errorf("failed to readfile: %s", err)
 		}
